@@ -1,5 +1,5 @@
-// AloNha Chat Client Application Logic - Golden Standard v1.3.0
-// Tương thích 100% với Giao diện Zalo và API Nhóm nâng cao, Vá lỗi WebRTC, Mobile layout và tính năng kết bạn Zalo style
+﻿// AloNha Chat Client Application Logic - Golden Standard v1.3.0
+// TÆ°Æ¡ng thÃ­ch 100% vá»›i Giao diá»‡n Zalo vÃ  API NhÃ³m nÃ¢ng cao, VÃ¡ lá»—i WebRTC, Mobile layout vÃ  tÃ­nh nÄƒng káº¿t báº¡n Zalo style
 
 let socket = null;
 let currentUser = null;
@@ -11,32 +11,32 @@ let roomsRefreshInFlight = false;
 let roomsRefreshPromise = null;
 let roomsRefreshTimer = null;
 
-// --- Helper: Parse file_url để ưu tiên local path ---
-// file_url có thể là "local_path||drive_url" hoặc chỉ "local_path"
+// --- Helper: Parse file_url Ä‘á»ƒ Æ°u tiÃªn local path ---
+// file_url cÃ³ thá»ƒ lÃ  "local_path||drive_url" hoáº·c chá»‰ "local_path"
 function getLocalFileUrl(fileUrl) {
   if (!fileUrl) return '';
-  // Nếu có dạng local_path||drive_url, ưu tiên dùng drive_url
+  // Náº¿u cÃ³ dáº¡ng local_path||drive_url, Æ°u tiÃªn dÃ¹ng drive_url
   if (fileUrl.includes('||')) {
     const parts = fileUrl.split('||');
     let driveUrl = parts[1];
-    // Trích xuất FILE_ID từ drive URL
-    // drive.google.com/file/d/FILE_ID/view hoặc /uc?id=FILE_ID
+    // TrÃ­ch xuáº¥t FILE_ID tá»« drive URL
+    // drive.google.com/file/d/FILE_ID/view hoáº·c /uc?id=FILE_ID
     const matchFileId = driveUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/) || driveUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
     if (matchFileId) {
       const fileId = matchFileId[1];
-      // Dùng thumbnail API của Google - hiển thị ảnh không cần xác thực
+      // DÃ¹ng thumbnail API cá»§a Google - hiá»ƒn thá»‹ áº£nh khÃ´ng cáº§n xÃ¡c thá»±c
       return "https://drive.google.com/thumbnail?id=" + fileId + "&sz=w800";
     }
     return driveUrl;
   }
-  // Nếu là file local, kiểm tra xem file có tồn tại không, nếu không thì trả về logo
+  // Náº¿u lÃ  file local, kiá»ƒm tra xem file cÃ³ tá»“n táº¡i khÃ´ng, náº¿u khÃ´ng thÃ¬ tráº£ vá» logo
   if (fileUrl.startsWith('/uploads/')) {
-    // File local có thể đã bị xóa, trả về nguyên để server handle 404
+    // File local cÃ³ thá»ƒ Ä‘Ã£ bá»‹ xÃ³a, tráº£ vá» nguyÃªn Ä‘á»ƒ server handle 404
     return fileUrl;
   }
   return fileUrl;
 }
-// --- GIAI ĐOẠN 3: TRẠNG THÁI TRÍCH DẪN & TÌM KIẾM TOÀN CỤC ---
+// --- GIAI ÄOáº N 3: TRáº NG THÃI TRÃCH DáºªN & TÃŒM KIáº¾M TOÃ€N Cá»¤C ---
 let replyingToMessageId = null;
 
 // --- PHASE 1, PHASE 2 & PHASE 3: CACHE, STATUS ICONS & REACTIONS ---
@@ -45,7 +45,7 @@ const AloNhaCache = {
         try {
             localStorage.setItem(`alonha_cache_${roomId}`, JSON.stringify(messages.slice(-50)));
         } catch (e) {
-            console.warn("Lỗi lưu cache tin nhắn:", e);
+            console.warn("Lá»—i lÆ°u cache tin nháº¯n:", e);
         }
     },
     get: (roomId) => {
@@ -59,9 +59,9 @@ const AloNhaCache = {
 };
 
 function renderStatusIcon(status) {
-    if (status === 'read') return '<i class="fa-solid fa-check-double text-blue-500 status-icon" title="Đã xem"></i>';
-    if (status === 'delivered') return '<i class="fa-solid fa-check-double text-slate-300 status-icon" title="Đã nhận"></i>';
-    return '<i class="fa-solid fa-check text-slate-300 status-icon" title="Đã gửi"></i>';
+    if (status === 'read') return '<i class="fa-solid fa-check-double text-blue-500 status-icon" title="ÄÃ£ xem"></i>';
+    if (status === 'delivered') return '<i class="fa-solid fa-check-double text-slate-300 status-icon" title="ÄÃ£ nháº­n"></i>';
+    return '<i class="fa-solid fa-check text-slate-300 status-icon" title="ÄÃ£ gá»­i"></i>';
 }
 
 function renderReactionsBadge(messageId, reactions) {
@@ -104,7 +104,7 @@ function submitReaction(messageId, emoji) {
 }
 
 function showWhoReactedModal(messageId) {
-  console.log("Xem chi tiết thả cảm xúc cho tin nhắn:", messageId);
+  console.log("Xem chi tiáº¿t tháº£ cáº£m xÃºc cho tin nháº¯n:", messageId);
 }
 
 function updateMessageStatusOnServer(messageId, status, roomId) {
@@ -118,7 +118,7 @@ function updateMessageStatusOnServer(messageId, status, roomId) {
   }).catch(err => console.warn(err));
 }
 
-// 🚀 GIAI ĐOẠN 3: HIỂN THỊ BANNER ĐANG TRẢ LỜI TIN NHẮN
+// ðŸš€ GIAI ÄOáº N 3: HIá»‚N THá»Š BANNER ÄANG TRáº¢ Lá»œI TIN NHáº®N
 function showReplyPreview(messageId, text, senderName) {
   let preview = document.getElementById("reply-preview-banner");
   if (!preview) {
@@ -128,7 +128,7 @@ function showReplyPreview(messageId, text, senderName) {
     preview.className = "flex items-center justify-between bg-slate-50 border-l-4 border-blue-500 px-4 py-2.5 text-xs text-slate-700 select-none rounded-t-xl w-full mb-1 shadow-sm border border-slate-100";
     preview.innerHTML = `
       <div class="min-w-0 flex-1">
-        <p class="font-bold text-blue-500 flex items-center gap-1"><i class="fa-solid fa-reply"></i> Đang trả lời ${senderName}</p>
+        <p class="font-bold text-blue-500 flex items-center gap-1"><i class="fa-solid fa-reply"></i> Äang tráº£ lá»i ${senderName}</p>
         <p class="truncate text-slate-400 italic mt-0.5" id="reply-preview-text"></p>
       </div>
       <button type="button" id="btn-cancel-reply" class="text-slate-400 hover:text-slate-600 focus:outline-none ml-2 p-1">
@@ -145,7 +145,7 @@ function showReplyPreview(messageId, text, senderName) {
     }
   }
   const previewText = document.getElementById("reply-preview-text");
-  if (previewText) previewText.textContent = text || "[Tài liệu / Hình ảnh]";
+  if (previewText) previewText.textContent = text || "[TÃ i liá»‡u / HÃ¬nh áº£nh]";
   preview.classList.remove("hidden");
   const inputField = document.getElementById("chat-input-field");
   if (inputField) inputField.focus();
@@ -157,7 +157,7 @@ function clearReplyState() {
   if (preview) preview.classList.add("hidden");
 }
 
-// 🚀 GIAI ĐOẠN 3: CUỘN ĐẾN TIN NHẮN ĐƯỢC CHỈ ĐỊNH VÀ NHẤP NHÁY
+// ðŸš€ GIAI ÄOáº N 3: CUá»˜N Äáº¾N TIN NHáº®N ÄÆ¯á»¢C CHá»ˆ Äá»ŠNH VÃ€ NHáº¤P NHÃY
 window.scrollToTargetMessage = function(targetId) {
   const el = document.getElementById(`msg-${targetId}`);
   if (el) {
@@ -167,11 +167,11 @@ window.scrollToTargetMessage = function(targetId) {
       el.classList.remove("bg-yellow-100/70", "scale-105");
     }, 2000);
   } else {
-    alert("Tin nhắn gốc đã quá cũ hoặc không được hiển thị trong phiên trò chuyện hiện tại.");
+    alert("Tin nháº¯n gá»‘c Ä‘Ã£ quÃ¡ cÅ© hoáº·c khÃ´ng Ä‘Æ°á»£c hiá»ƒn thá»‹ trong phiÃªn trÃ² chuyá»‡n hiá»‡n táº¡i.");
   }
 };
 
-// 🚀 GIAI ĐOẠN 3: BỘ TÌM KIẾM TIN NHẮN TRONG PHÒNG TRÒ CHUYỆN DYNAMIC OVERLAY
+// ðŸš€ GIAI ÄOáº N 3: Bá»˜ TÃŒM KIáº¾M TIN NHáº®N TRONG PHÃ’NG TRÃ’ CHUYá»†N DYNAMIC OVERLAY
 function toggleInRoomSearchOverlay() {
   let overlay = document.getElementById("in-room-search-modal");
   if (!overlay) {
@@ -181,17 +181,17 @@ function toggleInRoomSearchOverlay() {
     overlay.innerHTML = `
       <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-slate-100 flex flex-col max-h-[85vh]">
         <div class="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-magnifying-glass text-blue-500"></i> Tìm kiếm tin nhắn</h3>
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-magnifying-glass text-blue-500"></i> TÃ¬m kiáº¿m tin nháº¯n</h3>
           <button type="button" id="btn-close-msg-search" class="text-slate-400 hover:text-slate-600 focus:outline-none p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
         </div>
         <div class="p-4 border-b border-slate-100">
           <div class="relative">
-            <input type="text" id="input-msg-search-query" class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:ring-blue-500 focus:border-blue-500 focus:outline-none" placeholder="Nhập từ khóa tin nhắn cần tìm...">
+            <input type="text" id="input-msg-search-query" class="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:ring-blue-500 focus:border-blue-500 focus:outline-none" placeholder="Nháº­p tá»« khÃ³a tin nháº¯n cáº§n tÃ¬m...">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
           </div>
         </div>
         <div id="msg-search-results" class="flex-1 overflow-y-auto p-3 space-y-2 max-h-[50vh]">
-          <p class="text-xs text-slate-400 text-center py-8 select-none">Nhập từ khóa phía trên để bắt đầu tìm kiếm.</p>
+          <p class="text-xs text-slate-400 text-center py-8 select-none">Nháº­p tá»« khÃ³a phÃ­a trÃªn Ä‘á»ƒ báº¯t Ä‘áº§u tÃ¬m kiáº¿m.</p>
         </div>
       </div>
     `;
@@ -217,7 +217,7 @@ function toggleInRoomSearchOverlay() {
   const queryInput = document.getElementById("input-msg-search-query");
   if (queryInput) queryInput.value = "";
   const resultsContainer = document.getElementById("msg-search-results");
-  if (resultsContainer) resultsContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-8 select-none">Nhập từ khóa phía trên để bắt đầu tìm kiếm.</p>`;
+  if (resultsContainer) resultsContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-8 select-none">Nháº­p tá»« khÃ³a phÃ­a trÃªn Ä‘á»ƒ báº¯t Ä‘áº§u tÃ¬m kiáº¿m.</p>`;
   if (queryInput) queryInput.focus();
 }
 
@@ -225,7 +225,7 @@ function performInRoomSearch(q) {
   const resultsContainer = document.getElementById("msg-search-results");
   if (!resultsContainer) return;
   if (!q || q.length < 2) {
-    resultsContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-8 select-none">Vui lòng nhập tối thiểu 2 ký tự...</p>`;
+    resultsContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-8 select-none">Vui lÃ²ng nháº­p tá»‘i thiá»ƒu 2 kÃ½ tá»±...</p>`;
     return;
   }
   
@@ -236,14 +236,14 @@ function performInRoomSearch(q) {
   .then(data => {
     resultsContainer.innerHTML = "";
     if (!data || data.length === 0) {
-      resultsContainer.innerHTML = `<div class="text-center py-8 select-none text-slate-400"><i class="fa-solid fa-box-open text-xl mb-1.5 block text-slate-300"></i><p class="text-xs">Không tìm thấy kết quả nào trùng khớp.</p></div>`;
+      resultsContainer.innerHTML = `<div class="text-center py-8 select-none text-slate-400"><i class="fa-solid fa-box-open text-xl mb-1.5 block text-slate-300"></i><p class="text-xs">KhÃ´ng tÃ¬m tháº¥y káº¿t quáº£ nÃ o trÃ¹ng khá»›p.</p></div>`;
       return;
     }
     
     data.forEach(msg => {
       const div = document.createElement("div");
       div.className = "flex gap-2.5 p-2.5 hover:bg-slate-50 border border-slate-100 rounded-xl cursor-pointer transition-colors";
-      const text = msg.message_text || `[Tài liệu] ${msg.file_name || ''}`;
+      const text = msg.message_text || `[TÃ i liá»‡u] ${msg.file_name || ''}`;
       const date = new Date(msg.created_at);
       const formattedDate = `${date.getDate()}/${date.getMonth() + 1} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
       
@@ -268,8 +268,8 @@ function performInRoomSearch(q) {
     });
   })
   .catch(err => {
-    console.warn("Lỗi tìm kiếm:", err);
-    resultsContainer.innerHTML = `<p class="text-xs text-red-500 text-center py-8 select-none">Có lỗi xảy ra khi kết nối máy chủ</p>`;
+    console.warn("Lá»—i tÃ¬m kiáº¿m:", err);
+    resultsContainer.innerHTML = `<p class="text-xs text-red-500 text-center py-8 select-none">CÃ³ lá»—i xáº£y ra khi káº¿t ná»‘i mÃ¡y chá»§</p>`;
   });
 }
 
@@ -277,17 +277,17 @@ let activeRoomSettings = null;
 let activeRoomSelfSettings = null;
 let activeRoomMembers = [];
 
-// Trạng thái danh bạ
-let currentActiveView = 'chat'; // 'chat' hoặc 'contacts'
+// Tráº¡ng thÃ¡i danh báº¡
+let currentActiveView = 'chat'; // 'chat' hoáº·c 'contacts'
 let currentContactsTab = 'friends'; // 'friends', 'groups', 'requests', 'invites'
 let allFriendsCached = [];
 
-// Trạng thái cuộc gọi WebRTC
+// Tráº¡ng thÃ¡i cuá»™c gá»i WebRTC
 let localStream = null;
 let remoteStream = null;
 let peerConnection = null;
 let isCaller = false;
-let isCallConnecting = false; // Cờ chống Race Condition khi khởi chạy cuộc gọi
+let isCallConnecting = false; // Cá» chá»‘ng Race Condition khi khá»Ÿi cháº¡y cuá»™c gá»i
 let isMicMuted = false;
 let isCamOff = false;
 
@@ -316,7 +316,7 @@ const accordionStates = {
 };
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Luôn hiển thị màn hình đăng nhập khi khởi chạy
+  // LuÃ´n hiá»ƒn thá»‹ mÃ n hÃ¬nh Ä‘Äƒng nháº­p khi khá»Ÿi cháº¡y
   showAuthScreen();
   initUIEventListeners();
   setupInactivityTimer();
@@ -389,16 +389,16 @@ function renderAdminOverview(data) {
   if (!container) return;
   container.innerHTML = `
     <div class="bg-white rounded-2xl border border-slate-200 p-4">
-      <p class="text-xs uppercase tracking-wide text-slate-400">Tổng người dùng</p>
+      <p class="text-xs uppercase tracking-wide text-slate-400">Tá»•ng ngÆ°á»i dÃ¹ng</p>
       <p class="text-2xl font-bold text-slate-800 mt-1">${data.total_users || 0}</p>
     </div>
     <div class="bg-white rounded-2xl border border-slate-200 p-4">
-      <p class="text-xs uppercase tracking-wide text-slate-400">Tổng phòng / nhóm</p>
+      <p class="text-xs uppercase tracking-wide text-slate-400">Tá»•ng phÃ²ng / nhÃ³m</p>
       <p class="text-2xl font-bold text-slate-800 mt-1">${data.total_rooms || 0}</p>
     </div>
     <div class="bg-white rounded-2xl border border-slate-200 p-4">
-      <p class="text-xs uppercase tracking-wide text-slate-400">Trạng thái hệ thống</p>
-      <p class="text-lg font-semibold ${data.settings?.maintenance_mode ? 'text-amber-600' : 'text-emerald-600'} mt-1">${data.settings?.maintenance_mode ? 'Bảo trì' : 'Hoạt động'}</p>
+      <p class="text-xs uppercase tracking-wide text-slate-400">Tráº¡ng thÃ¡i há»‡ thá»‘ng</p>
+      <p class="text-lg font-semibold ${data.settings?.maintenance_mode ? 'text-amber-600' : 'text-emerald-600'} mt-1">${data.settings?.maintenance_mode ? 'Báº£o trÃ¬' : 'Hoáº¡t Ä‘á»™ng'}</p>
     </div>
   `;
 }
@@ -413,7 +413,7 @@ function renderAdminUsers(users) {
     card.innerHTML = `
       <div>
         <p class="font-semibold text-slate-800">${user.display_name || user.username}</p>
-        <p class="text-xs text-slate-500">${user.username} • ${user.role}</p>
+        <p class="text-xs text-slate-500">${user.username} â€¢ ${user.role}</p>
       </div>
       <div class="flex items-center gap-2">
         <select class="text-xs border border-slate-200 rounded-lg px-2 py-1" data-user-id="${user.id}" data-action="role">
@@ -438,11 +438,11 @@ function renderAdminRooms(rooms) {
     card.innerHTML = `
       <div>
         <p class="font-semibold text-slate-800">${escapeHtml(room.name)}</p>
-        <p class="text-xs text-slate-500">${room.is_group ? 'Nhóm' : 'Phòng'} • ${room.is_archived ? 'Đã archive' : 'Đang hoạt động'}</p>
+        <p class="text-xs text-slate-500">${room.is_group ? 'NhÃ³m' : 'PhÃ²ng'} â€¢ ${room.is_archived ? 'ÄÃ£ archive' : 'Äang hoáº¡t Ä‘á»™ng'}</p>
       </div>
       <div class="flex items-center gap-2">
         <button class="text-xs px-2 py-1 rounded-lg bg-slate-700 text-white" data-room-id="${room.id}" data-action="view-chat">Xem chat</button>
-        <button class="text-xs px-2 py-1 rounded-lg ${room.is_archived ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}" data-room-id="${room.id}" data-action="archive">${room.is_archived ? 'Mở lại' : 'Archive'}</button>
+        <button class="text-xs px-2 py-1 rounded-lg ${room.is_archived ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}" data-room-id="${room.id}" data-action="archive">${room.is_archived ? 'Má»Ÿ láº¡i' : 'Archive'}</button>
       </div>
     `;
     container.appendChild(card);
@@ -455,17 +455,17 @@ function renderAdminRoomMessages(data) {
   if (!container) return;
 
   if (title) {
-    title.textContent = data.room ? data.room.name : 'Phòng chat';
+    title.textContent = data.room ? data.room.name : 'PhÃ²ng chat';
   }
 
   const messages = data.messages || [];
   if (!messages.length) {
-    container.innerHTML = '<div class="text-center text-sm text-slate-500 py-8">Không có tin nhắn nào trong phòng này.</div>';
+    container.innerHTML = '<div class="text-center text-sm text-slate-500 py-8">KhÃ´ng cÃ³ tin nháº¯n nÃ o trong phÃ²ng nÃ y.</div>';
     return;
   }
 
   container.innerHTML = messages.map(msg => {
-    const senderName = msg.display_name || 'Người dùng';
+    const senderName = msg.display_name || 'NgÆ°á»i dÃ¹ng';
     const text = msg.message_text || '';
     const fileName = msg.file_name || '';
     const createdAt = new Date(msg.created_at).toLocaleString('vi-VN', {
@@ -504,8 +504,8 @@ async function openAdminRoomChatViewer(roomId) {
   const container = document.getElementById('admin-room-chat-messages');
   if (!modal || !container) return;
 
-  if (title) title.textContent = 'Đang tải...';
-  container.innerHTML = '<div class="text-center text-sm text-slate-500 py-8">Đang tải nội dung chat...</div>';
+  if (title) title.textContent = 'Äang táº£i...';
+  container.innerHTML = '<div class="text-center text-sm text-slate-500 py-8">Äang táº£i ná»™i dung chat...</div>';
   modal.classList.remove('hidden');
 
   try {
@@ -514,12 +514,12 @@ async function openAdminRoomChatViewer(roomId) {
     });
     const data = await res.json();
     if (!res.ok || data.error) {
-      throw new Error(data.error || 'Không thể tải nội dung phòng');
+      throw new Error(data.error || 'KhÃ´ng thá»ƒ táº£i ná»™i dung phÃ²ng');
     }
     renderAdminRoomMessages(data);
   } catch (err) {
-    console.warn('Lỗi xem chat phòng admin:', err);
-    if (container) container.innerHTML = `<div class="text-center text-sm text-red-500 py-8">${escapeHtml(err.message || 'Không thể tải nội dung phòng')}</div>`;
+    console.warn('Lá»—i xem chat phÃ²ng admin:', err);
+    if (container) container.innerHTML = `<div class="text-center text-sm text-red-500 py-8">${escapeHtml(err.message || 'KhÃ´ng thá»ƒ táº£i ná»™i dung phÃ²ng')}</div>`;
   }
 }
 
@@ -528,18 +528,18 @@ function renderAdminSettings(settings) {
   if (!container) return;
   container.innerHTML = `
     <label class="flex items-center justify-between rounded-xl border border-slate-200 p-3">
-      <span class="text-sm text-slate-700">Chế độ bảo trì</span>
+      <span class="text-sm text-slate-700">Cháº¿ Ä‘á»™ báº£o trÃ¬</span>
       <input type="checkbox" id="admin-maintenance" ${settings.maintenance_mode ? 'checked' : ''}>
     </label>
     <label class="flex items-center justify-between rounded-xl border border-slate-200 p-3">
-      <span class="text-sm text-slate-700">Cho phép đăng ký</span>
+      <span class="text-sm text-slate-700">Cho phÃ©p Ä‘Äƒng kÃ½</span>
       <input type="checkbox" id="admin-registration" ${settings.allow_registration ? 'checked' : ''}>
     </label>
     <label class="flex items-center gap-2 rounded-xl border border-slate-200 p-3">
-      <span class="text-sm text-slate-700">Giới hạn người dùng</span>
+      <span class="text-sm text-slate-700">Giá»›i háº¡n ngÆ°á»i dÃ¹ng</span>
       <input type="number" id="admin-max-users" value="${settings.max_users || 1000}" class="w-24 rounded-lg border border-slate-200 px-2 py-1 text-sm">
     </label>
-    <button id="admin-settings-save" class="rounded-xl bg-zalo-primary px-4 py-2 text-sm font-semibold text-white">Lưu cài đặt</button>
+    <button id="admin-settings-save" class="rounded-xl bg-zalo-primary px-4 py-2 text-sm font-semibold text-white">LÆ°u cÃ i Ä‘áº·t</button>
   `;
 }
 
@@ -562,7 +562,7 @@ async function loadAdminPanelData() {
     const settings = await settingsRes.json();
     renderAdminSettings(settings);
   } catch (err) {
-    console.warn('Lỗi tải admin panel:', err);
+    console.warn('Lá»—i táº£i admin panel:', err);
   }
 }
 
@@ -626,7 +626,7 @@ async function saveAdminSettings() {
     const data = await res.json();
     if (data.error) alert(data.error);
     else {
-      alert('Đã lưu cài đặt hệ thống');
+      alert('ÄÃ£ lÆ°u cÃ i Ä‘áº·t há»‡ thá»‘ng');
       loadAdminPanelData();
     }
   } catch (err) {
@@ -663,7 +663,7 @@ function connectSocket(token) {
         const badge = msgEl.querySelector(".moderation-badge");
         if (badge) {
           if (data.status === 'approved') {
-            badge.textContent = 'Đã duyệt';
+            badge.textContent = 'ÄÃ£ duyá»‡t';
             badge.className = 'moderation-badge bg-emerald-100 text-emerald-700 text-[9px] font-bold px-1.5 py-0.2 rounded ml-1 select-none';
             // Show the message content
             const body = msgEl.querySelector('.moderation-body');
@@ -671,7 +671,7 @@ function connectSocket(token) {
             const pendingOverlay = msgEl.querySelector('.moderation-pending-overlay');
             if (pendingOverlay) pendingOverlay.remove();
           } else if (data.status === 'rejected') {
-            badge.textContent = 'Đã từ chối';
+            badge.textContent = 'ÄÃ£ tá»« chá»‘i';
             badge.className = 'moderation-badge bg-red-100 text-red-700 text-[9px] font-bold px-1.5 py-0.2 rounded ml-1 select-none';
             const body = msgEl.querySelector('.moderation-body');
             if (body) body.classList.add('hidden');
@@ -680,7 +680,7 @@ function connectSocket(token) {
       }
     }
     if (data.status === 'approved') {
-      // Nếu được duyệt, refresh để load nội dung
+      // Náº¿u Ä‘Æ°á»£c duyá»‡t, refresh Ä‘á»ƒ load ná»™i dung
       loadMessages(activeRoomId);
     }
   });
@@ -718,10 +718,10 @@ function connectSocket(token) {
       if (msgItem) {
         const bodyContainer = msgItem.querySelector(".bg-\\[\\#cce4ff\\]") || msgItem.querySelector(".bg-white");
         if (bodyContainer) {
-          bodyContainer.innerHTML = `<p class="text-xs md:text-sm text-slate-400/80 italic select-none flex items-center gap-1.5"><i class="fa-solid fa-ban text-slate-300"></i> Tin nhắn đã bị thu hồi</p>`;
+          bodyContainer.innerHTML = `<p class="text-xs md:text-sm text-slate-400/80 italic select-none flex items-center gap-1.5"><i class="fa-solid fa-ban text-slate-300"></i> Tin nháº¯n Ä‘Ã£ bá»‹ thu há»“i</p>`;
           bodyContainer.onclick = null;
         }
-        const ctxBtn = msgItem.querySelector("button[title='Tác vụ']");
+        const ctxBtn = msgItem.querySelector("button[title='TÃ¡c vá»¥']");
         if (ctxBtn) ctxBtn.remove();
         
         const reactionsBadge = document.getElementById(`msg-reactions-${data.message_id}`);
@@ -809,7 +809,7 @@ function connectSocket(token) {
 
   socket.on("group_dissolved", (data) => {
     if (activeRoomId && data.room_id == activeRoomId) {
-      alert("Hội thoại nhóm này đã bị giải tán bởi Trưởng nhóm.");
+      alert("Há»™i thoáº¡i nhÃ³m nÃ y Ä‘Ã£ bá»‹ giáº£i tÃ¡n bá»Ÿi TrÆ°á»Ÿng nhÃ³m.");
       location.reload();
     }
   });
@@ -824,14 +824,14 @@ function connectSocket(token) {
 
   socket.on("call_accepted", async (data) => {
     const statusText = document.getElementById("call-status-text");
-    if (statusText) statusText.textContent = "Đối phương đã nhận cuộc gọi, đang kết nối trực tiếp...";
+    if (statusText) statusText.textContent = "Äá»‘i phÆ°Æ¡ng Ä‘Ã£ nháº­n cuá»™c gá»i, Ä‘ang káº¿t ná»‘i trá»±c tiáº¿p...";
     if (isCaller) {
       await startWebRTCCall(data.room_id, true);
     }
   });
 
   socket.on("call_rejected", () => {
-    alert("Cuộc gọi đã bị từ chối hoặc đối tác đang bận.");
+    alert("Cuá»™c gá»i Ä‘Ã£ bá»‹ tá»« chá»‘i hoáº·c Ä‘á»‘i tÃ¡c Ä‘ang báº­n.");
     closeCallOverlay();
   });
 
@@ -839,25 +839,25 @@ function connectSocket(token) {
     if (data.sender_id == currentUser.id) return;
     try {
       if (!peerConnection) {
-        console.log("⚡ [WebRTC] Nhận được tín hiệu nhưng chưa khởi tạo PeerConnection, đang kích hoạt...");
+        console.log("âš¡ [WebRTC] Nháº­n Ä‘Æ°á»£c tÃ­n hiá»‡u nhÆ°ng chÆ°a khá»Ÿi táº¡o PeerConnection, Ä‘ang kÃ­ch hoáº¡t...");
         await startWebRTCCall(data.room_id, false);
       }
       
       if (!peerConnection) {
-        console.error("⚠️ [WebRTC] Lỗi nghiêm trọng: Không thể tạo PeerConnection.");
+        console.error("âš ï¸ [WebRTC] Lá»—i nghiÃªm trá»ng: KhÃ´ng thá»ƒ táº¡o PeerConnection.");
         return;
       }
 
       if (data.signal.sdp) {
-        console.log("⚡ [WebRTC] Nhận SDP loại:", data.signal.sdp.type);
-        // Kiểm tra renegotiation (screen share)
+        console.log("âš¡ [WebRTC] Nháº­n SDP loáº¡i:", data.signal.sdp.type);
+        // Kiá»ƒm tra renegotiation (screen share)
         if (peerConnection.currentRemoteDescription && data.signal.sdp.type === "offer") {
-          console.log("⚡ [WebRTC] Phát hiện renegotiation (screen share)...");
+          console.log("âš¡ [WebRTC] PhÃ¡t hiá»‡n renegotiation (screen share)...");
         }
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.signal.sdp));
         
         if (peerConnection.iceCandidatesQueue) {
-          console.log(`⚡ [WebRTC] Đang đồng bộ hóa ${peerConnection.iceCandidatesQueue.length} candidates lưu tạm...`);
+          console.log(`âš¡ [WebRTC] Äang Ä‘á»“ng bá»™ hÃ³a ${peerConnection.iceCandidatesQueue.length} candidates lÆ°u táº¡m...`);
           for (const candidate of peerConnection.iceCandidatesQueue) {
             await peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.warn(e));
           }
@@ -865,7 +865,7 @@ function connectSocket(token) {
         }
         
         if (peerConnection.remoteDescription.type === 'offer') {
-          console.log("⚡ [WebRTC] Đang tạo SDP Answer phản hồi...");
+          console.log("âš¡ [WebRTC] Äang táº¡o SDP Answer pháº£n há»“i...");
           const answer = await peerConnection.createAnswer();
           await peerConnection.setLocalDescription(answer);
           socket.emit("webrtc_signal", { room_id: data.room_id, signal: { sdp: peerConnection.localDescription }, sender_id: currentUser.id });
@@ -876,7 +876,7 @@ function connectSocket(token) {
         } else {
           if (!peerConnection.iceCandidatesQueue) peerConnection.iceCandidatesQueue = [];
           peerConnection.iceCandidatesQueue.push(data.signal.candidate);
-          console.log("⚡ [WebRTC] Đã lưu candidate vào hàng đợi chờ remoteDescription...");
+          console.log("âš¡ [WebRTC] ÄÃ£ lÆ°u candidate vÃ o hÃ ng Ä‘á»£i chá» remoteDescription...");
         }
       }
     } catch (err) {
@@ -906,7 +906,7 @@ function refreshRoomsList(force = false) {
     return rooms;
   })
   .catch(err => {
-    console.warn("Lỗi tải danh sách phòng:", err);
+    console.warn("Lá»—i táº£i danh sÃ¡ch phÃ²ng:", err);
     return [];
   })
   .finally(() => {
@@ -956,8 +956,8 @@ function renderRoomsList(rooms) {
       <div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mb-4">
         <i class="fa-regular fa-comments text-3xl text-slate-300"></i>
       </div>
-      <h3 class="text-base font-bold text-slate-400">Chưa có hội thoại</h3>
-      <p class="text-xs text-slate-300 mt-2 text-center">Hãy kết bạn và bắt đầu trò chuyện<br>hoặc tạo nhóm chat mới</p>
+      <h3 class="text-base font-bold text-slate-400">ChÆ°a cÃ³ há»™i thoáº¡i</h3>
+      <p class="text-xs text-slate-300 mt-2 text-center">HÃ£y káº¿t báº¡n vÃ  báº¯t Ä‘áº§u trÃ² chuyá»‡n<br>hoáº·c táº¡o nhÃ³m chat má»›i</p>
     `;
     container.appendChild(emptyDiv);
     return;
@@ -968,7 +968,7 @@ function renderRoomsList(rooms) {
     const isGroup = room.is_group;
     
     let avatarUrl = "/logo.png";
-    if (room.name === 'Cloud của tôi') {
+    if (room.name === 'Cloud cá»§a tÃ´i') {
       avatarUrl = "https://img.icons8.com/color/192/000000/cloud.png";
     } else if (room.partner_avatar) {
       avatarUrl = room.partner_avatar;
@@ -979,11 +979,11 @@ function renderRoomsList(rooms) {
       : '';
 
     const pinIcon = room.is_pinned 
-      ? `<i class="fa-solid fa-thumbtack text-slate-400 text-[10px] transform rotate-45 select-none" title="Đã ghim hội thoại"></i>` 
+      ? `<i class="fa-solid fa-thumbtack text-slate-400 text-[10px] transform rotate-45 select-none" title="ÄÃ£ ghim há»™i thoáº¡i"></i>` 
       : '';
 
     const muteIcon = room.is_muted 
-      ? `<i class="fa-solid fa-bell-slash text-red-400 text-[10px] select-none" title="Đã tắt thông báo"></i>` 
+      ? `<i class="fa-solid fa-bell-slash text-red-400 text-[10px] select-none" title="ÄÃ£ táº¯t thÃ´ng bÃ¡o"></i>` 
       : '';
 
     const div = document.createElement("div");
@@ -992,7 +992,7 @@ function renderRoomsList(rooms) {
     div.innerHTML = `
       <div class="relative shrink-0 select-none">
         <img src="${avatarUrl}" class="w-11 h-11 rounded-full object-cover">
-        ${!isGroup && room.name !== 'Cloud của tôi' ? `<span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>` : ''}
+        ${!isGroup && room.name !== 'Cloud cá»§a tÃ´i' ? `<span class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>` : ''}
       </div>
       <div class="flex-1 min-w-0">
         <div class="flex justify-between items-baseline mb-0.5">
@@ -1003,7 +1003,7 @@ function renderRoomsList(rooms) {
           <span class="text-[10px] text-slate-400 font-semibold shrink-0">${room.last_message_time ? formatTime(room.last_message_time) : ''}</span>
         </div>
         <div class="flex justify-between items-center gap-2">
-          <p class="text-xs text-slate-500 truncate flex-1">${room.last_message || 'Chưa có tin nhắn.'}</p>
+          <p class="text-xs text-slate-500 truncate flex-1">${room.last_message || 'ChÆ°a cÃ³ tin nháº¯n.'}</p>
           <div class="flex items-center gap-1.5">
             ${pinIcon}
             ${unreadBadge}
@@ -1036,7 +1036,7 @@ function renderRoomsList(rooms) {
 }
 
 // =========================================================================
-// 📌 QUẢN LÝ MENU CHUỘT PHẢI DANH SÁCH HỘI THOẠI (GHIM / TẮT THÔNG BÁO)
+// ðŸ“Œ QUáº¢N LÃ MENU CHUá»˜T PHáº¢I DANH SÃCH Há»˜I THOáº I (GHIM / Táº®T THÃ”NG BÃO)
 // =========================================================================
 let contextRoomId = null;
 
@@ -1058,10 +1058,10 @@ window.openRoomContextMenu = function(e, room) {
   const pinBtnIcon = document.getElementById("ctx-room-pin")?.querySelector("i");
   if (pinBtnSpan && pinBtnIcon) {
     if (room.is_pinned) {
-      pinBtnSpan.textContent = "Bỏ ghim hội thoại";
+      pinBtnSpan.textContent = "Bá» ghim há»™i thoáº¡i";
       pinBtnIcon.className = "fa-solid fa-thumbtack w-4 text-center text-slate-400";
     } else {
-      pinBtnSpan.textContent = "Ghim hội thoại";
+      pinBtnSpan.textContent = "Ghim há»™i thoáº¡i";
       pinBtnIcon.className = "fa-solid fa-thumbtack w-4 text-center transform rotate-45 text-blue-500";
     }
   }
@@ -1070,10 +1070,10 @@ window.openRoomContextMenu = function(e, room) {
   const muteBtnIcon = document.getElementById("ctx-room-mute")?.querySelector("i");
   if (muteBtnSpan && muteBtnIcon) {
     if (room.is_muted) {
-      muteBtnSpan.textContent = "Bật thông báo";
+      muteBtnSpan.textContent = "Báº­t thÃ´ng bÃ¡o";
       muteBtnIcon.className = "fa-solid fa-bell w-4 text-center text-blue-500";
     } else {
-      muteBtnSpan.textContent = "Tắt thông báo";
+      muteBtnSpan.textContent = "Táº¯t thÃ´ng bÃ¡o";
       muteBtnIcon.className = "fa-solid fa-bell-slash w-4 text-center text-red-500";
     }
   }
@@ -1086,7 +1086,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// 5. CHỌN PHÒNG CHAT
+// 5. CHá»ŒN PHÃ’NG CHAT
 function handleRoomSelection(roomId) {
   if (currentUser.pin_code && !unlockedRooms.has(roomId)) {
     tempRoomToUnlock = roomId;
@@ -1142,7 +1142,7 @@ function handleRoomSelection(roomId) {
     const searchBtn = document.createElement("button");
     searchBtn.id = "btn-open-search-msg";
     searchBtn.className = "w-9 h-9 rounded-full bg-slate-50 border border-slate-100 text-slate-500 hover:text-blue-500 flex items-center justify-center shadow-sm transition-colors focus:outline-none";
-    searchBtn.title = "Tìm kiếm tin nhắn";
+    searchBtn.title = "TÃ¬m kiáº¿m tin nháº¯n";
     searchBtn.innerHTML = `<i class="fa-solid fa-magnifying-glass text-sm"></i>`;
     searchBtn.onclick = () => {
       toggleInRoomSearchOverlay();
@@ -1180,7 +1180,7 @@ function startOneToOneChat(userId, partnerName) {
   .then(res => res.json())
   .then(room => {
     if (room.error) {
-      alert("Lỗi khi khởi động cuộc hội thoại: " + room.error);
+      alert("Lá»—i khi khá»Ÿi Ä‘á»™ng cuá»™c há»™i thoáº¡i: " + room.error);
       return;
     }
     loadRooms(true).then(() => {
@@ -1188,7 +1188,7 @@ function startOneToOneChat(userId, partnerName) {
     });
   })
   .catch(err => {
-    alert("Không thể kết nối máy chủ để tạo cuộc trò chuyện!");
+    alert("KhÃ´ng thá»ƒ káº¿t ná»‘i mÃ¡y chá»§ Ä‘á»ƒ táº¡o cuá»™c trÃ² chuyá»‡n!");
     console.error(err);
   });
 }
@@ -1221,10 +1221,10 @@ function markRoomAsRead(roomId) {
   .then(res => res.json())
   .then(data => {
     if (data.success) {
-      console.log(`✅ Đã xem toàn bộ tin nhắn trong phòng: ${roomId}`);
+      console.log(`âœ… ÄÃ£ xem toÃ n bá»™ tin nháº¯n trong phÃ²ng: ${roomId}`);
     }
   })
-  .catch(err => console.warn("Lỗi đánh dấu đã xem:", err));
+  .catch(err => console.warn("Lá»—i Ä‘Ã¡nh dáº¥u Ä‘Ã£ xem:", err));
 }
 
 function renderSingleMessage(msg) {
@@ -1244,7 +1244,7 @@ function renderSingleMessage(msg) {
   const isRecalled = msg.is_recalled === true;
   const isStaff = activeRoomSelfSettings && (activeRoomSelfSettings.role === 'admin' || activeRoomSelfSettings.role === 'co-leader');
   
-  // Kiểm duyệt nội dung: tin nhắn chờ duyệt nếu nhóm bật moderation và người gửi không phải staff
+  // Kiá»ƒm duyá»‡t ná»™i dung: tin nháº¯n chá» duyá»‡t náº¿u nhÃ³m báº­t moderation vÃ  ngÆ°á»i gá»­i khÃ´ng pháº£i staff
   const moderationEnabled = activeRoomSettings && activeRoomSettings.is_group && activeRoomSettings.group_moderation_mode;
   const needsModeration = moderationEnabled && !isStaff && !isMe && !msg.is_system && !isRecalled;
   const isPendingModeration = needsModeration && msg.moderation_status === 'pending';
@@ -1261,25 +1261,25 @@ function renderSingleMessage(msg) {
   const senderInGroup = activeRoomMembers.find(m => m.user_id == msg.sender_id);
   if (activeRoomSettings && activeRoomSettings.is_group && activeRoomSettings.group_mark_admin_messages && senderInGroup) {
     if (senderInGroup.role === 'admin') {
-      senderRoleTag = `<span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded ml-1 select-none">Trưởng nhóm</span>`;
+      senderRoleTag = `<span class="bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded ml-1 select-none">TrÆ°á»Ÿng nhÃ³m</span>`;
     } else if (senderInGroup.role === 'co-leader') {
-      senderRoleTag = `<span class="bg-blue-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded ml-1 select-none">Phó nhóm</span>`;
+      senderRoleTag = `<span class="bg-blue-500 text-white text-[9px] font-bold px-1.5 py-0.2 rounded ml-1 select-none">PhÃ³ nhÃ³m</span>`;
     }
   }
 
-  const displayName = msg.display_name || "Thành viên";
+  const displayName = msg.display_name || "ThÃ nh viÃªn";
 
   let replyBlockHTML = "";
   if (msg.reply_to_id && !isRecalled) {
-    const parentSender = msg.parent_sender_name || "Thành viên";
-    let parentPreviewText = msg.parent_text || `[Tài liệu] ${msg.parent_file_name || ''}`;
+    const parentSender = msg.parent_sender_name || "ThÃ nh viÃªn";
+    let parentPreviewText = msg.parent_text || `[TÃ i liá»‡u] ${msg.parent_file_name || ''}`;
     if (msg.parent_is_recalled) {
-      parentPreviewText = "Tin nhắn đã bị thu hồi";
+      parentPreviewText = "Tin nháº¯n Ä‘Ã£ bá»‹ thu há»“i";
     }
     
     replyBlockHTML = `
       <div class="bg-slate-50 border-l-2 border-blue-500 rounded px-2.5 py-1.5 mb-2 text-[10px] md:text-[11px] text-slate-500 cursor-pointer hover:bg-slate-100 transition-colors max-w-full select-none" onclick="event.stopPropagation(); scrollToTargetMessage(${msg.reply_to_id})">
-        <p class="font-bold text-blue-500 text-[10px] truncate flex items-center gap-1"><i class="fa-solid fa-reply text-[8px]"></i> Trích dẫn từ ${parentSender}</p>
+        <p class="font-bold text-blue-500 text-[10px] truncate flex items-center gap-1"><i class="fa-solid fa-reply text-[8px]"></i> TrÃ­ch dáº«n tá»« ${parentSender}</p>
         <p class="truncate italic mt-0.5">${parentPreviewText}</p>
       </div>
     `;
@@ -1287,18 +1287,18 @@ function renderSingleMessage(msg) {
 
   let chatBody = "";
   if (isRecalled) {
-    chatBody = `<p class="text-xs md:text-sm text-slate-400/80 italic select-none flex items-center gap-1.5"><i class="fa-solid fa-ban text-slate-300"></i> Tin nhắn đã bị thu hồi</p>`;
+    chatBody = `<p class="text-xs md:text-sm text-slate-400/80 italic select-none flex items-center gap-1.5"><i class="fa-solid fa-ban text-slate-300"></i> Tin nháº¯n Ä‘Ã£ bá»‹ thu há»“i</p>`;
   } else if (msg.file_type === 'location') {
     // Render location message
-    let locData = { lat: 0, lng: 0, name: "Vị trí", address: "" };
+    let locData = { lat: 0, lng: 0, name: "Vá»‹ trÃ­", address: "" };
     try {
       const parsed = JSON.parse(msg.message_text);
-      locData = { lat: parsed.lat || 0, lng: parsed.lng || 0, name: parsed.name || "Vị trí", address: parsed.address || "" };
+      locData = { lat: parsed.lat || 0, lng: parsed.lng || 0, name: parsed.name || "Vá»‹ trÃ­", address: parsed.address || "" };
     } catch (e) {
       // If can't parse as JSON, try to extract coordinates from text
       const coordsMatch = msg.message_text.match(/(\d+\.\d+),\s*(\d+\.\d+)/);
       if (coordsMatch) {
-        locData = { lat: parseFloat(coordsMatch[1]), lng: parseFloat(coordsMatch[2]), name: "Vị trí", address: msg.message_text };
+        locData = { lat: parseFloat(coordsMatch[1]), lng: parseFloat(coordsMatch[2]), name: "Vá»‹ trÃ­", address: msg.message_text };
       }
     }
     const googleMapsUrl = `https://www.google.com/maps?q=${locData.lat},${locData.lng}`;
@@ -1306,14 +1306,14 @@ function renderSingleMessage(msg) {
       ${replyBlockHTML}
       <div class="min-w-[200px] max-w-[260px] cursor-pointer select-none" onclick="event.stopPropagation(); openLocationView(${locData.lat}, ${locData.lng}, '${escapeHtml(locData.name)}', '${escapeHtml(locData.address || '')}')">
         <div id="location-thumb-${msg.id}" class="h-32 bg-slate-200 rounded-t-xl flex items-center justify-center text-slate-400 text-xs relative overflow-hidden">
-          <img src="https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-l+ff0000(${locData.lng},${locData.lat})/${locData.lng},${locData.lat},15,0/260x128@2x?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.7XpPXtFwZ7s5UJZnEuK8-Q" 
+          <img src="https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/pin-l+ff0000(${locData.lng},${locData.lat})/${locData.lng},${locData.lat},15,0/260x128@2x?access_token=YOUR_MAPBOX_TOKEN" 
                class="w-full h-full object-cover"
-               alt="Bản đồ"
-               onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fa-solid fa-map-location-dot text-2xl\\'></i><span class=\\'mt-1\\'>Bản đồ</span>'">
+               alt="Báº£n Ä‘á»“"
+               onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fa-solid fa-map-location-dot text-2xl\\'></i><span class=\\'mt-1\\'>Báº£n Ä‘á»“</span>'">
         </div>
         <div class="bg-white px-3 py-2 rounded-b-xl border border-slate-100 border-t-0">
           <p class="text-xs font-bold text-slate-800 truncate">${escapeHtml(locData.name)}</p>
-          <p class="text-[10px] text-slate-400 truncate mt-0.5">${escapeHtml(locData.address || 'Xem trên Google Maps')}</p>
+          <p class="text-[10px] text-slate-400 truncate mt-0.5">${escapeHtml(locData.address || 'Xem trÃªn Google Maps')}</p>
         </div>
       </div>
     `;
@@ -1330,7 +1330,7 @@ function renderSingleMessage(msg) {
         <div class="flex flex-col items-start gap-1 py-1 min-w-[200px]">
           <audio controls preload="metadata" class="h-10 w-full outline-none rounded-full">
             <source src="${getLocalFileUrl(msg.file_url)}" type="${audioMimeType}">
-            Trình duyệt không hỗ trợ.
+            TrÃ¬nh duyá»‡t khÃ´ng há»— trá»£.
           </audio>
         </div>
       `;
@@ -1341,7 +1341,7 @@ function renderSingleMessage(msg) {
         <div class="relative group/img-container">
           <img src="${localUrl}" class="max-w-[180px] md:max-w-xs rounded-xl shadow-sm border cursor-pointer hover:opacity-95 transition-opacity">
           <div class="absolute top-2 right-2 bg-slate-900/70 hover:bg-slate-950 text-white text-[10px] px-2.5 py-1 rounded-lg opacity-0 group-hover/img-container:opacity-100 transition-opacity flex items-center gap-1 cursor-pointer font-bold select-none z-20" onclick="event.stopPropagation(); window.open('${localUrl}', '_blank')">
-            <i class="fa-solid fa-expand"></i> Phóng to
+            <i class="fa-solid fa-expand"></i> PhÃ³ng to
           </div>
         </div>
       `;
@@ -1356,7 +1356,7 @@ function renderSingleMessage(msg) {
             <p class="font-bold text-slate-800 truncate">${msg.file_name}</p>
             <p class="text-[10px] text-slate-400 font-bold mt-0.5">${msg.file_size}</p>
           </div>
-          <a href="${getLocalFileUrl(msg.file_url)}" target="_blank" onclick="event.stopPropagation();" class="text-blue-600 hover:underline font-bold text-xs shrink-0 pl-1">Tải về</a>
+          <a href="${getLocalFileUrl(msg.file_url)}" target="_blank" onclick="event.stopPropagation();" class="text-blue-600 hover:underline font-bold text-xs shrink-0 pl-1">Táº£i vá»</a>
         </div>
       `;
     }
@@ -1372,7 +1372,7 @@ function renderSingleMessage(msg) {
   const encodedName = encodeURIComponent(displayName);
   const fileUrlParam = msg.file_url ? `'${encodeURIComponent(getLocalFileUrl(msg.file_url))}'` : 'null';
   
-  const ctxBtn = isRecalled ? '' : `<button onclick="openMessageActionMenu(${msg.id}, '${encodedText}', ${isMe}, '${encodedName}', ${fileUrlParam})" class="hidden group-hover:flex absolute top-1/2 -translate-y-1/2 ${isMe ? 'left-[-35px]' : 'right-[-35px]'} bg-white w-7 h-7 rounded-full shadow border text-slate-400 hover:text-blue-500 items-center justify-center focus:outline-none" title="Tác vụ"><i class="fa-solid fa-ellipsis-vertical text-xs"></i></button>`;
+  const ctxBtn = isRecalled ? '' : `<button onclick="openMessageActionMenu(${msg.id}, '${encodedText}', ${isMe}, '${encodedName}', ${fileUrlParam})" class="hidden group-hover:flex absolute top-1/2 -translate-y-1/2 ${isMe ? 'left-[-35px]' : 'right-[-35px]'} bg-white w-7 h-7 rounded-full shadow border text-slate-400 hover:text-blue-500 items-center justify-center focus:outline-none" title="TÃ¡c vá»¥"><i class="fa-solid fa-ellipsis-vertical text-xs"></i></button>`;
 
   let reactionsHTML = "";
   if (!isRecalled && msg.reactions && msg.reactions.length > 0) {
@@ -1397,10 +1397,10 @@ function renderSingleMessage(msg) {
     let moderationBadge = "";
     let moderationOverlay = "";
     if (isPendingModeration) {
-      moderationBadge = `<span class="moderation-badge bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.2 rounded ml-1 select-none">Đang chờ duyệt</span>`;
-      moderationOverlay = `<div class="moderation-pending-overlay absolute inset-0 bg-white/75 rounded-2xl flex items-center justify-center z-10 cursor-default"><span class="text-[10px] text-amber-700 font-bold bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200 shadow-sm"><i class="fa-solid fa-hourglass-half mr-1"></i> Tin nhắn đang chờ ban quản trị phê duyệt</span></div>`;
+      moderationBadge = `<span class="moderation-badge bg-amber-100 text-amber-700 text-[9px] font-bold px-1.5 py-0.2 rounded ml-1 select-none">Äang chá» duyá»‡t</span>`;
+      moderationOverlay = `<div class="moderation-pending-overlay absolute inset-0 bg-white/75 rounded-2xl flex items-center justify-center z-10 cursor-default"><span class="text-[10px] text-amber-700 font-bold bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200 shadow-sm"><i class="fa-solid fa-hourglass-half mr-1"></i> Tin nháº¯n Ä‘ang chá» ban quáº£n trá»‹ phÃª duyá»‡t</span></div>`;
     } else if (isRejectedModeration) {
-      moderationBadge = `<span class="moderation-badge bg-red-100 text-red-700 text-[9px] font-bold px-1.5 py-0.2 rounded ml-1 select-none">Bị từ chối</span>`;
+      moderationBadge = `<span class="moderation-badge bg-red-100 text-red-700 text-[9px] font-bold px-1.5 py-0.2 rounded ml-1 select-none">Bá»‹ tá»« chá»‘i</span>`;
     }
 
     div.innerHTML = `
@@ -1414,7 +1414,7 @@ function renderSingleMessage(msg) {
         <div class="bg-white text-slate-800 py-2.5 px-4 rounded-2xl rounded-tl-none shadow-sm border border-slate-100 cursor-pointer relative ${isPendingModeration || isRejectedModeration ? 'opacity-80' : ''}" ${isRecalled ? '' : `onclick="openMessageActionMenu(${msg.id}, '${encodedText}', ${isMe}, '${encodedName}', ${fileUrlParam})"`}>
           ${moderationOverlay}
           <div class="${isPendingModeration || isRejectedModeration ? 'moderation-body' : ''}">
-            ${isPendingModeration ? `<p class="text-xs text-slate-400 italic">[Nội dung tin nhắn đang chờ phê duyệt]</p>` : chatBody}
+            ${isPendingModeration ? `<p class="text-xs text-slate-400 italic">[Ná»™i dung tin nháº¯n Ä‘ang chá» phÃª duyá»‡t]</p>` : chatBody}
           </div>
         </div>
         <div id="msg-reactions-${msg.id}" class="mt-[-8px] ml-2 z-10">${reactionsHTML}</div>
@@ -1426,12 +1426,12 @@ function renderSingleMessage(msg) {
   container.appendChild(div);
 }
 
-// 7. MESSAGE ACTION MENU (GIAI ĐOẠN 3: Bổ sung thêm nút Trả lời)
+// 7. MESSAGE ACTION MENU (GIAI ÄOáº N 3: Bá»• sung thÃªm nÃºt Tráº£ lá»i)
 window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedName, encodedFileUrl) {
   const text = decodeURIComponent(encodedText);
-  const displayName = decodeURIComponent(encodedName || "Thành viên");
+  const displayName = decodeURIComponent(encodedName || "ThÃ nh viÃªn");
   const fileUrl = encodedFileUrl ? decodeURIComponent(encodedFileUrl) : null;
-  // Lấy file_url gốc từ dataset của message div
+  // Láº¥y file_url gá»‘c tá»« dataset cá»§a message div
   const msgDiv = document.getElementById("msg-" + messageId);
   const rawFileUrl = msgDiv ? (msgDiv.dataset.rawFileUrl || fileUrl) : fileUrl;
   const menu = document.getElementById("msg-context-menu");
@@ -1442,7 +1442,7 @@ window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedNam
   if (!emojiBar) {
     emojiBar = document.createElement("div");
     emojiBar.className = "emoji-reaction-bar flex justify-around items-center bg-slate-50 border border-slate-100 rounded-full p-2 mb-2 select-none shadow-sm";
-    const emojis = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+    const emojis = ["ðŸ‘", "â¤ï¸", "ðŸ˜‚", "ðŸ˜®", "ðŸ˜¢", "ðŸ˜¡"];
     emojis.forEach(emoji => {
       const btn = document.createElement("button");
       btn.className = "text-xl hover:scale-125 active:scale-90 transition-transform focus:outline-none";
@@ -1457,7 +1457,7 @@ window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedNam
     const clearBtn = document.createElement("button");
     clearBtn.className = "w-6 h-6 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-600 text-xs flex items-center justify-center font-bold shadow-sm transition-colors focus:outline-none";
     clearBtn.innerHTML = "<i class='fa-solid fa-trash-can text-[10px]'></i>";
-    clearBtn.title = "Xóa biểu cảm";
+    clearBtn.title = "XÃ³a biá»ƒu cáº£m";
     clearBtn.onclick = () => {
       submitReaction(messageId, null);
       menu.classList.add("hidden");
@@ -1469,7 +1469,7 @@ window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedNam
     }
   } else {
     const buttons = emojiBar.querySelectorAll("button");
-    const emojis = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+    const emojis = ["ðŸ‘", "â¤ï¸", "ðŸ˜‚", "ðŸ˜®", "ðŸ˜¢", "ðŸ˜¡"];
     buttons.forEach((btn, idx) => {
       if (idx < emojis.length) {
         btn.onclick = () => {
@@ -1490,7 +1490,7 @@ window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedNam
     replyBtn = document.createElement("button");
     replyBtn.id = "ctx-btn-reply";
     replyBtn.className = "w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-100 flex items-center space-x-2 font-semibold transition-colors";
-    replyBtn.innerHTML = `<i class="fa-solid fa-reply text-slate-400 w-4"></i> <span>Trả lời</span>`;
+    replyBtn.innerHTML = `<i class="fa-solid fa-reply text-slate-400 w-4"></i> <span>Tráº£ lá»i</span>`;
     
     const copyBtn = document.getElementById("ctx-btn-copy");
     if (menu.firstElementChild) {
@@ -1500,7 +1500,7 @@ window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedNam
   
   replyBtn.onclick = () => {
     replyingToMessageId = messageId;
-    showReplyPreview(messageId, text, isMe ? "chính mình" : displayName);
+    showReplyPreview(messageId, text, isMe ? "chÃ­nh mÃ¬nh" : displayName);
     menu.classList.add("hidden");
   };
 
@@ -1510,7 +1510,7 @@ window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedNam
       fileBtn = document.createElement("button");
       fileBtn.id = "ctx-btn-view-file";
       fileBtn.className = "w-full text-left px-4 py-2 text-xs text-blue-600 hover:bg-blue-50 flex items-center space-x-2 font-bold transition-colors border-b border-slate-100";
-      fileBtn.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square text-blue-500 w-4"></i> <span>Mở rộng / Xem chi tiết tệp</span>`;
+      fileBtn.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square text-blue-500 w-4"></i> <span>Má»Ÿ rá»™ng / Xem chi tiáº¿t tá»‡p</span>`;
       if (menu.firstElementChild) {
         menu.firstElementChild.insertBefore(fileBtn, menu.firstElementChild.firstChild);
       }
@@ -1530,7 +1530,7 @@ window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedNam
     else deleteBtn.classList.add("hidden");
     
     deleteBtn.onclick = () => {
-      if (confirm("Xác nhận thu hồi tin nhắn này đối với mọi người?")) {
+      if (confirm("XÃ¡c nháº­n thu há»“i tin nháº¯n nÃ y Ä‘á»‘i vá»›i má»i ngÆ°á»i?")) {
         fetch(`/api/messages/${messageId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem("alonha_token")}` }
@@ -1569,8 +1569,8 @@ window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedNam
   const copyBtn = document.getElementById("ctx-btn-copy");
   if (copyBtn) {
     copyBtn.onclick = () => {
-      navigator.clipboard.writeText(text || "[File / Hình ảnh]").then(() => {
-        alert("Đã sao chép nội dung tin nhắn!");
+      navigator.clipboard.writeText(text || "[File / HÃ¬nh áº£nh]").then(() => {
+        alert("ÄÃ£ sao chÃ©p ná»™i dung tin nháº¯n!");
         menu.classList.add("hidden");
       });
     };
@@ -1676,23 +1676,23 @@ function uploadFile(source) {
         scrollToBottom();
         loadResources(activeRoomId);
       } catch (e) {
-        alert('Tải lên thành công nhưng phản hồi không hợp lệ.');
+        alert('Táº£i lÃªn thÃ nh cÃ´ng nhÆ°ng pháº£n há»“i khÃ´ng há»£p lá»‡.');
       }
     } else if (res.status === 413) {
-      alert("Tệp tin quá giới hạn tải lên của máy chủ VPS!");
+      alert("Tá»‡p tin quÃ¡ giá»›i háº¡n táº£i lÃªn cá»§a mÃ¡y chá»§ VPS!");
     } else {
       try {
         const errData = JSON.parse(text);
-        alert("Tải tệp lên thất bại: " + (errData.error || "Lỗi không xác định từ máy chủ"));
+        alert("Táº£i tá»‡p lÃªn tháº¥t báº¡i: " + (errData.error || "Lá»—i khÃ´ng xÃ¡c Ä‘á»‹nh tá»« mÃ¡y chá»§"));
       } catch (e) {
-        alert("Tải tệp lên máy chủ thất bại! (Mã trạng thái: " + res.status + ")");
+        alert("Táº£i tá»‡p lÃªn mÃ¡y chá»§ tháº¥t báº¡i! (MÃ£ tráº¡ng thÃ¡i: " + res.status + ")");
       }
     }
   })
   .catch((err) => {
     if (banner) banner.classList.add("hidden");
     console.error('[voice-debug] upload fetch error', err);
-    alert("Gửi tệp thất bại do lỗi mạng hoặc máy chủ.");
+    alert("Gá»­i tá»‡p tháº¥t báº¡i do lá»—i máº¡ng hoáº·c mÃ¡y chá»§.");
   });
 
   if (source && source.value !== undefined) {
@@ -1730,7 +1730,7 @@ function loadGroupDetails(roomId) {
     updateQuickActionsUI(data.self);
     updateSendMessageInputPermission(data.settings, data.self.role);
 
-    // Xử lý ẩn/hiện nút Thêm TV và Quản lý tùy theo loại phòng chat
+    // Xá»­ lÃ½ áº©n/hiá»‡n nÃºt ThÃªm TV vÃ  Quáº£n lÃ½ tÃ¹y theo loáº¡i phÃ²ng chat
     const addMemberBtn = document.getElementById("btn-info-add-member");
     const manageGroupBtn = document.getElementById("btn-info-manage-group");
     const quickActionsContainer = addMemberBtn ? addMemberBtn.parentElement : null;
@@ -1743,7 +1743,7 @@ function loadGroupDetails(roomId) {
       if (manageGroupBtn) manageGroupBtn.classList.remove("hidden");
       if (addMemberBtn) addMemberBtn.classList.remove("hidden");
       
-      // Khôi phục layout grid-cols-4 gốc cho nhóm
+      // KhÃ´i phá»¥c layout grid-cols-4 gá»‘c cho nhÃ³m
       if (quickActionsContainer) {
         quickActionsContainer.className = "grid grid-cols-4 gap-1 text-center py-2 select-none";
       }
@@ -1760,8 +1760,8 @@ function loadGroupDetails(roomId) {
       
       if (groupLinkTextbox) {
         if (!data.settings.group_allow_join_via_link) {
-          groupLinkTextbox.value = "Liên kết tham gia nhóm đang bị tắt";
-          if (manageGroupLinkTextbox) manageGroupLinkTextbox.value = "Liên kết tham gia nhóm đang bị tắt";
+          groupLinkTextbox.value = "LiÃªn káº¿t tham gia nhÃ³m Ä‘ang bá»‹ táº¯t";
+          if (manageGroupLinkTextbox) manageGroupLinkTextbox.value = "LiÃªn káº¿t tham gia nhÃ³m Ä‘ang bá»‹ táº¯t";
           if (copyGroupLinkBtn) copyGroupLinkBtn.disabled = true;
           if (shareGroupLinkBtn) shareGroupLinkBtn.disabled = true;
           if (manageCopyLinkBtn) manageCopyLinkBtn.disabled = true;
@@ -1796,7 +1796,7 @@ function loadGroupDetails(roomId) {
       if (manageGroupBtn) manageGroupBtn.classList.add("hidden");
       if (addMemberBtn) addMemberBtn.classList.add("hidden");
       
-      // Điều chỉnh layout thành grid-cols-2 cân đối cho 2 nút còn lại (Tắt báo và Ghim)
+      // Äiá»u chá»‰nh layout thÃ nh grid-cols-2 cÃ¢n Ä‘á»‘i cho 2 nÃºt cÃ²n láº¡i (Táº¯t bÃ¡o vÃ  Ghim)
       if (quickActionsContainer) {
         quickActionsContainer.className = "grid grid-cols-2 gap-4 text-center py-2 select-none px-4";
       }
@@ -1806,12 +1806,12 @@ function loadGroupDetails(roomId) {
       const editGroupProfileBtn = document.getElementById("btn-edit-group-profile");
       if (editGroupProfileBtn) editGroupProfileBtn.classList.add("hidden");
 
-      if (data.settings.name === 'Cloud của tôi') {
+      if (data.settings.name === 'Cloud cá»§a tÃ´i') {
         if (cloudCard) cloudCard.classList.remove("hidden");
         const cloudUsageBar = document.getElementById("cloud-usage-bar");
         if (cloudUsageBar) cloudUsageBar.style.width = "4.2%";
         const cloudUsageText = document.getElementById("cloud-usage-text");
-        if (cloudUsageText) cloudUsageText.textContent = "Đã dùng 128.5 GB / 3.0 TB";
+        if (cloudUsageText) cloudUsageText.textContent = "ÄÃ£ dÃ¹ng 128.5 GB / 3.0 TB";
       } else {
         if (cloudCard) cloudCard.classList.add("hidden");
       }
@@ -1828,14 +1828,14 @@ function updateQuickActionsUI(selfSettings) {
       const icon = muteBtn.querySelector("i");
       if (icon) icon.className = "fa-solid fa-bell-slash";
       const span = muteBtn.querySelector("span");
-      if (span) span.textContent = "Bật báo";
+      if (span) span.textContent = "Báº­t bÃ¡o";
     } else {
       const div = muteBtn.querySelector("div");
       if (div) div.className = "w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-sm";
       const icon = muteBtn.querySelector("i");
       if (icon) icon.className = "fa-solid fa-bell";
       const span = muteBtn.querySelector("span");
-      if (span) span.textContent = "Tắt báo";
+      if (span) span.textContent = "Táº¯t bÃ¡o";
     }
   }
 
@@ -1847,7 +1847,7 @@ function updateQuickActionsUI(selfSettings) {
       const icon = pinBtn.querySelector("i");
       if (icon) icon.className = "fa-solid fa-thumbtack transform rotate-45";
       const span = pinBtn.querySelector("span");
-      if (span) span.textContent = "Bỏ ghim";
+      if (span) span.textContent = "Bá» ghim";
     } else {
       const div = pinBtn.querySelector("div");
       if (div) div.className = "w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-sm";
@@ -1869,18 +1869,18 @@ function updateSendMessageInputPermission(settings, role) {
     const isStaff = role === 'admin' || role === 'co-leader';
     if (!settings.group_allow_send_message && !isStaff) {
       inputField.disabled = true;
-      inputField.placeholder = "Chỉ Trưởng/Phó nhóm mới được gửi tin nhắn trong nhóm này";
+      inputField.placeholder = "Chá»‰ TrÆ°á»Ÿng/PhÃ³ nhÃ³m má»›i Ä‘Æ°á»£c gá»­i tin nháº¯n trong nhÃ³m nÃ y";
       sendBtn.disabled = true;
       sendBtn.className = "bg-slate-300 text-slate-500 w-10 h-10 rounded-xl flex items-center justify-center shadow-none cursor-not-allowed shrink-0";
     } else {
       inputField.disabled = false;
-      inputField.placeholder = "Nhập tin nhắn...";
+      inputField.placeholder = "Nháº­p tin nháº¯n...";
       sendBtn.disabled = false;
       sendBtn.className = "bg-zalo-primary hover:bg-zalo-hover text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md transition-colors shrink-0";
     }
   } else {
     inputField.disabled = false;
-    inputField.placeholder = "Nhập tin nhắn...";
+    inputField.placeholder = "Nháº­p tin nháº¯n...";
     sendBtn.disabled = false;
     sendBtn.className = "bg-zalo-primary hover:bg-zalo-hover text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md transition-colors shrink-0";
   }
@@ -1895,9 +1895,9 @@ function renderGroupMembers(members, settings) {
     const avatar = m.avatar_url || "/logo.png";
     let roleBadge = "";
     if (m.role === 'admin') {
-      roleBadge = `<span class="bg-red-100 text-red-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full select-none shrink-0 border border-red-200">Trưởng nhóm</span>`;
+      roleBadge = `<span class="bg-red-100 text-red-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full select-none shrink-0 border border-red-200">TrÆ°á»Ÿng nhÃ³m</span>`;
     } else if (m.role === 'co-leader') {
-      roleBadge = `<span class="bg-blue-100 text-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full select-none shrink-0 border border-blue-200">Phó nhóm</span>`;
+      roleBadge = `<span class="bg-blue-100 text-blue-700 text-[9px] font-bold px-1.5 py-0.5 rounded-full select-none shrink-0 border border-blue-200">PhÃ³ nhÃ³m</span>`;
     }
 
     const isActiveUserCreator = settings.creator_id == currentUser.id;
@@ -1907,12 +1907,12 @@ function renderGroupMembers(members, settings) {
     const canKick = (activeUserRole === 'admin' || (activeUserRole === 'co-leader' && m.role !== 'admin')) && !isTargetCurrentUser;
 
     const kickBtn = canKick 
-      ? `<button onclick="kickGroupMember(${m.user_id}, '${m.display_name}')" class="text-slate-300 hover:text-red-500 p-1 shrink-0 transition-colors" title="Mời ra khỏi nhóm"><i class="fa-solid fa-user-minus text-xs"></i></button>`
+      ? `<button onclick="kickGroupMember(${m.user_id}, '${m.display_name}')" class="text-slate-300 hover:text-red-500 p-1 shrink-0 transition-colors" title="Má»i ra khá»i nhÃ³m"><i class="fa-solid fa-user-minus text-xs"></i></button>`
       : '';
 
     const canTransferOwner = isActiveUserCreator && !isTargetCurrentUser;
     const transferBtn = canTransferOwner
-      ? `<button onclick="transferGroupOwner(${m.user_id}, '${m.display_name}')" class="text-slate-300 hover:text-amber-500 p-1 shrink-0 transition-colors" title="Chuyển quyền Trưởng nhóm"><i class="fa-solid fa-crown text-xs"></i></button>`
+      ? `<button onclick="transferGroupOwner(${m.user_id}, '${m.display_name}')" class="text-slate-300 hover:text-amber-500 p-1 shrink-0 transition-colors" title="Chuyá»ƒn quyá»n TrÆ°á»Ÿng nhÃ³m"><i class="fa-solid fa-crown text-xs"></i></button>`
       : '';
 
     const div = document.createElement("div");
@@ -1936,7 +1936,7 @@ function renderGroupMembers(members, settings) {
 }
 
 window.kickGroupMember = function(userId, displayName) {
-  if (confirm(`Bạn chắc chắn muốn mời ${displayName} ra khỏi nhóm này?`)) {
+  if (confirm(`Báº¡n cháº¯c cháº¯n muá»‘n má»i ${displayName} ra khá»i nhÃ³m nÃ y?`)) {
     fetch(`/api/rooms/${activeRoomId}/members/${userId}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${localStorage.getItem("alonha_token")}` }
@@ -1950,7 +1950,7 @@ window.kickGroupMember = function(userId, displayName) {
 };
 
 window.transferGroupOwner = function(newOwnerId, newOwnerName) {
-  if (confirm(`⚠️ Bạn đang thực hiện chuyển giao quyền TRƯỞNG NHÓM cho [${newOwnerName}]. Sau khi đồng ý, tài khoản của bạn sẽ trở thành thành viên thường. Xác nhận?`)) {
+  if (confirm(`âš ï¸ Báº¡n Ä‘ang thá»±c hiá»‡n chuyá»ƒn giao quyá»n TRÆ¯á»žNG NHÃ“M cho [${newOwnerName}]. Sau khi Ä‘á»“ng Ã½, tÃ i khoáº£n cá»§a báº¡n sáº½ trá»Ÿ thÃ nh thÃ nh viÃªn thÆ°á»ng. XÃ¡c nháº­n?`)) {
     fetch(`/api/rooms/${activeRoomId}/transfer-owner`, {
       method: 'PUT',
       headers: {
@@ -1963,11 +1963,11 @@ window.transferGroupOwner = function(newOwnerId, newOwnerName) {
     .then(data => {
       if (data.error) alert(data.error);
       else {
-        alert(`Bàn giao quyền Trưởng nhóm thành công cho [${newOwnerName}]!`);
+        alert(`BÃ n giao quyá»n TrÆ°á»Ÿng nhÃ³m thÃ nh cÃ´ng cho [${newOwnerName}]!`);
         loadGroupDetails(activeRoomId);
       }
     })
-    .catch(() => alert("Gặp sự cố khi thực hiện chuyển quyền trưởng nhóm."));
+    .catch(() => alert("Gáº·p sá»± cá»‘ khi thá»±c hiá»‡n chuyá»ƒn quyá»n trÆ°á»Ÿng nhÃ³m."));
   }
 };
 
@@ -2089,7 +2089,7 @@ function renderPinBanner() {
   const pin = currentPins[currentPinIndex];
   if (!pin) return;
 
-  const text = pin.message_text || `[Tài liệu] ${pin.file_name}`;
+  const text = pin.message_text || `[TÃ i liá»‡u] ${pin.file_name}`;
   const preview = document.getElementById("pinned-msg-preview");
   if (preview) preview.textContent = `${pin.display_name}: ${text}`;
   const badgeIndex = document.getElementById("pin-banner-index");
@@ -2145,7 +2145,7 @@ if (btnViewAllPins) {
       el.classList.add("bg-yellow-100/60", "p-2.5", "rounded-xl", "transition-all", "duration-500");
       setTimeout(() => el.classList.remove("bg-yellow-100/60"), 2500);
     } else {
-      alert("Tin nhắn ghim này quá cũ để hiển thị trên màn hình hiện tại.");
+      alert("Tin nháº¯n ghim nÃ y quÃ¡ cÅ© Ä‘á»ƒ hiá»ƒn thá»‹ trÃªn mÃ n hÃ¬nh hiá»‡n táº¡i.");
     }
   };
 }
@@ -2301,7 +2301,7 @@ function parseJoinLinkQuery() {
 // 13. WebRTC HD VIDEO CALLS
 async function startWebRTCCall(roomId, callerMode) {
   if (isCallConnecting) {
-    console.warn("⚠️ [WebRTC] Cuộc gọi đang được kết nối song song, chặn chồng chéo.");
+    console.warn("âš ï¸ [WebRTC] Cuá»™c gá»i Ä‘ang Ä‘Æ°á»£c káº¿t ná»‘i song song, cháº·n chá»“ng chÃ©o.");
     while (isCallConnecting) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
@@ -2311,19 +2311,19 @@ async function startWebRTCCall(roomId, callerMode) {
 
   try {
     try {
-    // Thử lấy cả video và audio trước
+    // Thá»­ láº¥y cáº£ video vÃ  audio trÆ°á»›c
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
   } catch (firstErr) {
-    console.warn("⚠️ [WebRTC] Không lấy được video, tự động chuyển sang gọi thoại:", firstErr.message);
+    console.warn("âš ï¸ [WebRTC] KhÃ´ng láº¥y Ä‘Æ°á»£c video, tá»± Ä‘á»™ng chuyá»ƒn sang gá»i thoáº¡i:", firstErr.message);
     try {
-      // Fallback: chỉ lấy audio, vẫn tiếp tục cuộc gọi
+      // Fallback: chá»‰ láº¥y audio, váº«n tiáº¿p tá»¥c cuá»™c gá»i
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Thông báo nhẹ cho người dùng
-      console.log("ℹ️ [WebRTC] Đang thực hiện cuộc gọi thoại (không có camera)");
-      // Cập nhật UI để thông báo không có camera
+      // ThÃ´ng bÃ¡o nháº¹ cho ngÆ°á»i dÃ¹ng
+      console.log("â„¹ï¸ [WebRTC] Äang thá»±c hiá»‡n cuá»™c gá»i thoáº¡i (khÃ´ng cÃ³ camera)");
+      // Cáº­p nháº­t UI Ä‘á»ƒ thÃ´ng bÃ¡o khÃ´ng cÃ³ camera
       const callStatusText = document.getElementById("call-status-text");
-      if (callStatusText) callStatusText.textContent = "Đang gọi thoại (không có camera)";
-      // Ẩn/tắt nút camera
+      if (callStatusText) callStatusText.textContent = "Äang gá»i thoáº¡i (khÃ´ng cÃ³ camera)";
+      // áº¨n/táº¯t nÃºt camera
       const camBtn = document.getElementById("btn-call-toggle-cam");
       if (camBtn) {
         camBtn.className = "w-14 h-14 rounded-full bg-slate-600 text-white flex items-center justify-center shadow-lg transition-all opacity-50 cursor-not-allowed";
@@ -2331,13 +2331,13 @@ async function startWebRTCCall(roomId, callerMode) {
         camBtn.disabled = true;
       }
     } catch (secondErr) {
-      console.warn("⚠️ [WebRTC] Không lấy được audio:", secondErr.message);
-      // Thử chỉ lấy video nếu audio cũng không được
+      console.warn("âš ï¸ [WebRTC] KhÃ´ng láº¥y Ä‘Æ°á»£c audio:", secondErr.message);
+      // Thá»­ chá»‰ láº¥y video náº¿u audio cÅ©ng khÃ´ng Ä‘Æ°á»£c
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ video: true });
       } catch (thirdErr) {
-        // Không có thiết bị nào, báo lỗi nhưng không ngắt - vẫn thử kết nối
-        console.error("❌ [WebRTC] Không có thiết bị thu/phát nào:", thirdErr.message);
+        // KhÃ´ng cÃ³ thiáº¿t bá»‹ nÃ o, bÃ¡o lá»—i nhÆ°ng khÃ´ng ngáº¯t - váº«n thá»­ káº¿t ná»‘i
+        console.error("âŒ [WebRTC] KhÃ´ng cÃ³ thiáº¿t bá»‹ thu/phÃ¡t nÃ o:", thirdErr.message);
         throw thirdErr;
       }
     }
@@ -2353,7 +2353,7 @@ async function startWebRTCCall(roomId, callerMode) {
     resetCallControlButtonsUI();
 
     if (localVideo) {
-      await localVideo.play().catch(err => console.warn("Lỗi phát video local:", err));
+      await localVideo.play().catch(err => console.warn("Lá»—i phÃ¡t video local:", err));
     }
 
     peerConnection = new RTCPeerConnection(iceServers);
@@ -2366,7 +2366,7 @@ async function startWebRTCCall(roomId, callerMode) {
     };
 
     peerConnection.ontrack = (e) => {
-      console.log("⚡ [WebRTC] Nhận được remote track!");
+      console.log("âš¡ [WebRTC] Nháº­n Ä‘Æ°á»£c remote track!");
       const remoteVideo = document.getElementById("remote-video");
       if (remoteVideo) {
         if (e.streams && e.streams[0]) {
@@ -2379,7 +2379,7 @@ async function startWebRTCCall(roomId, callerMode) {
           remoteStream.addTrack(e.track);
         }
         
-        remoteVideo.play().catch(err => console.warn("Lỗi nạp remote video:", err));
+        remoteVideo.play().catch(err => console.warn("Lá»—i náº¡p remote video:", err));
       }
       const statusOverlay = document.getElementById("call-status-overlay");
       if (statusOverlay) statusOverlay.classList.add("hidden");
@@ -2387,21 +2387,21 @@ async function startWebRTCCall(roomId, callerMode) {
 
     peerConnection.oniceconnectionstatechange = () => {
       const state = peerConnection.iceConnectionState;
-      console.log("⚡ [WebRTC] ICE Connection State:", state);
+      console.log("âš¡ [WebRTC] ICE Connection State:", state);
       if (state === "connected" || state === "completed") {
         const statusOverlay = document.getElementById("call-status-overlay");
         if (statusOverlay) statusOverlay.classList.add("hidden");
         const statusText = document.getElementById("call-status-text");
-        if (statusText) statusText.textContent = "Đã kết nối - Đang gọi...";
+        if (statusText) statusText.textContent = "ÄÃ£ káº¿t ná»‘i - Äang gá»i...";
       } else if (state === "failed" || state === "disconnected") {
-        console.warn("⚠️ [WebRTC] Mất kết nối ICE, cố gắng khôi phục...");
+        console.warn("âš ï¸ [WebRTC] Máº¥t káº¿t ná»‘i ICE, cá»‘ gáº¯ng khÃ´i phá»¥c...");
         const statusText = document.getElementById("call-status-text");
-        if (statusText) statusText.textContent = "Đang khôi phục kết nối...";
+        if (statusText) statusText.textContent = "Äang khÃ´i phá»¥c káº¿t ná»‘i...";
       }
     };
 
     if (callerMode) {
-      console.log("⚡ [WebRTC] Đang tạo SDP Offer...");
+      console.log("âš¡ [WebRTC] Äang táº¡o SDP Offer...");
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
       socket.emit("webrtc_signal", { room_id: roomId, signal: { sdp: peerConnection.localDescription }, sender_id: currentUser.id });
@@ -2409,15 +2409,15 @@ async function startWebRTCCall(roomId, callerMode) {
 
   } catch (err) {
     if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-    alert("Bạn đã từ chối quyền truy cập Camera/Micro. Vui lòng cho phép trong cài đặt trình duyệt.");
+    alert("Báº¡n Ä‘Ã£ tá»« chá»‘i quyá»n truy cáº­p Camera/Micro. Vui lÃ²ng cho phÃ©p trong cÃ i Ä‘áº·t trÃ¬nh duyá»‡t.");
   } else if (err.name === "NotFoundError") {
-    alert("Không tìm thấy thiết bị Camera/Micro nào trên máy tính này.");
+    alert("KhÃ´ng tÃ¬m tháº¥y thiáº¿t bá»‹ Camera/Micro nÃ o trÃªn mÃ¡y tÃ­nh nÃ y.");
   } else if (err.name === "NotReadableError") {
-    alert("Camera/Micro đang bị ứng dụng khác sử dụng. Vui lòng đóng ứng dụng đó lại.");
+    alert("Camera/Micro Ä‘ang bá»‹ á»©ng dá»¥ng khÃ¡c sá»­ dá»¥ng. Vui lÃ²ng Ä‘Ã³ng á»©ng dá»¥ng Ä‘Ã³ láº¡i.");
   } else {
-    alert("Không thể kết nối thiết bị thu/phát. Lỗi: " + err.message + "\n\nMẹo: Hãy đảm bảo bạn đang dùng HTTPS (localhost cũng được) và cấp quyền Camera/Micro.");
+    alert("KhÃ´ng thá»ƒ káº¿t ná»‘i thiáº¿t bá»‹ thu/phÃ¡t. Lá»—i: " + err.message + "\n\nMáº¹o: HÃ£y Ä‘áº£m báº£o báº¡n Ä‘ang dÃ¹ng HTTPS (localhost cÅ©ng Ä‘Æ°á»£c) vÃ  cáº¥p quyá»n Camera/Micro.");
   }
-    console.error("Lỗi WebRTC getUserMedia:", err);
+    console.error("Lá»—i WebRTC getUserMedia:", err);
     closeCallOverlay();
   } finally {
     isCallConnecting = false;
@@ -2473,18 +2473,18 @@ async function toggleScreenShare() {
   const btn = document.getElementById("btn-call-screen-share");
   
   if (isScreenSharing) {
-    // Dừng chia sẻ màn hình
+    // Dá»«ng chia sáº» mÃ n hÃ¬nh
     if (screenStream) {
       screenStream.getTracks().forEach(track => track.stop());
       screenStream = null;
     }
     isScreenSharing = false;
     
-    // Bật lại camera nếu đang tắt
+    // Báº­t láº¡i camera náº¿u Ä‘ang táº¯t
     if (localStream && peerConnection) {
       const videoTrack = localStream.getVideoTracks()[0];
       if (videoTrack) {
-        // Gỡ track screen cũ, thay bằng track camera
+        // Gá»¡ track screen cÅ©, thay báº±ng track camera
         const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
         if (sender) {
           sender.replaceTrack(videoTrack);
@@ -2495,13 +2495,13 @@ async function toggleScreenShare() {
     if (btn) {
       btn.className = "w-14 h-14 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center shadow-lg transition-all";
       btn.innerHTML = '<i class="fa-solid fa-display text-lg"></i>';
-      btn.title = "Chia sẻ màn hình";
+      btn.title = "Chia sáº» mÃ n hÃ¬nh";
     }
     return;
   }
   
   try {
-    // Yêu cầu quyền chia sẻ màn hình
+    // YÃªu cáº§u quyá»n chia sáº» mÃ n hÃ¬nh
     screenStream = await navigator.mediaDevices.getDisplayMedia({
       video: {
         cursor: "always",
@@ -2516,7 +2516,7 @@ async function toggleScreenShare() {
     
     isScreenSharing = true;
     
-    // Thay thế video track trên peer connection
+    // Thay tháº¿ video track trÃªn peer connection
     if (peerConnection) {
       const screenTrack = screenStream.getVideoTracks()[0];
       const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === 'video');
@@ -2525,16 +2525,16 @@ async function toggleScreenShare() {
       } else {
         const newSender = peerConnection.addTrack(screenTrack, screenStream);
       }
-      // QUAN TRỌNG: Gửi lại SDP để đồng bộ track mới với đối tác
+      // QUAN TRá»ŒNG: Gá»­i láº¡i SDP Ä‘á»ƒ Ä‘á»“ng bá»™ track má»›i vá»›i Ä‘á»‘i tÃ¡c
       peerConnection.onnegotiationneeded = async () => {
         try {
           await peerConnection.setLocalDescription(await peerConnection.createOffer());
           socket.emit("webrtc_signal", { room_id: activeRoomId, signal: { sdp: peerConnection.localDescription }, sender_id: currentUser.id });
         } catch (e) {
-          console.warn("⚠️ [ScreenShare] negotiation error:", e);
+          console.warn("âš ï¸ [ScreenShare] negotiation error:", e);
         }
       };
-      // Kích hoạt negotiation
+      // KÃ­ch hoáº¡t negotiation
       setTimeout(() => {
         if (peerConnection) {
           peerConnection.onnegotiationneeded(null);
@@ -2542,19 +2542,19 @@ async function toggleScreenShare() {
       }, 100);
     }
     
-    // Hiển thị màn hình đang chia sẻ lên local video
+    // Hiá»ƒn thá»‹ mÃ n hÃ¬nh Ä‘ang chia sáº» lÃªn local video
     const localVideo = document.getElementById("local-video");
     if (localVideo) {
       localVideo.srcObject = screenStream;
-      await localVideo.play().catch(err => console.warn("Lỗi phát screen share:", err));
+      await localVideo.play().catch(err => console.warn("Lá»—i phÃ¡t screen share:", err));
     }
     
-    // Xử lý khi người dùng dừng chia sẻ từ trình duyệt
+    // Xá»­ lÃ½ khi ngÆ°á»i dÃ¹ng dá»«ng chia sáº» tá»« trÃ¬nh duyá»‡t
     screenStream.getVideoTracks()[0].onended = async () => {
       isScreenSharing = false;
       screenStream = null;
       
-      // Khôi phục camera
+      // KhÃ´i phá»¥c camera
       if (localStream && peerConnection) {
         const videoTrack = localStream.getVideoTracks()[0];
         if (videoTrack) {
@@ -2566,10 +2566,10 @@ async function toggleScreenShare() {
         const localVideo = document.getElementById("local-video");
         if (localVideo) {
           localVideo.srcObject = localStream;
-          await localVideo.play().catch(err => console.warn("Lỗi khôi phục local video:", err));
+          await localVideo.play().catch(err => console.warn("Lá»—i khÃ´i phá»¥c local video:", err));
         }
         
-        // Gửi lại SDP để đồng bộ track camera với đối tác
+        // Gá»­i láº¡i SDP Ä‘á»ƒ Ä‘á»“ng bá»™ track camera vá»›i Ä‘á»‘i tÃ¡c
         if (peerConnection) {
           try {
             peerConnection.onnegotiationneeded = async () => {
@@ -2580,7 +2580,7 @@ async function toggleScreenShare() {
               if (peerConnection) peerConnection.onnegotiationneeded(null);
             }, 100);
           } catch (e) {
-            console.warn("⚠️ [ScreenShare] negotiation error on stop:", e);
+            console.warn("âš ï¸ [ScreenShare] negotiation error on stop:", e);
           }
         }
       }
@@ -2588,23 +2588,23 @@ async function toggleScreenShare() {
       if (btn) {
         btn.className = "w-14 h-14 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center shadow-lg transition-all";
         btn.innerHTML = '<i class="fa-solid fa-display text-lg"></i>';
-        btn.title = "Chia sẻ màn hình";
+        btn.title = "Chia sáº» mÃ n hÃ¬nh";
       }
     };
     
-    // Cập nhật UI
+    // Cáº­p nháº­t UI
     if (btn) {
       btn.className = "w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-lg transition-all";
       btn.innerHTML = '<i class="fa-solid fa-stop-circle text-lg"></i>';
-      btn.title = "Dừng chia sẻ màn hình";
+      btn.title = "Dá»«ng chia sáº» mÃ n hÃ¬nh";
     }
     
   } catch (err) {
-    console.error("❌ Lỗi chia sẻ màn hình:", err);
+    console.error("âŒ Lá»—i chia sáº» mÃ n hÃ¬nh:", err);
     if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
-      alert("Bạn đã từ chối quyền chia sẻ màn hình. Vui lòng cho phép để sử dụng tính năng này.");
+      alert("Báº¡n Ä‘Ã£ tá»« chá»‘i quyá»n chia sáº» mÃ n hÃ¬nh. Vui lÃ²ng cho phÃ©p Ä‘á»ƒ sá»­ dá»¥ng tÃ­nh nÄƒng nÃ y.");
     } else if (err.name === "NotSupportedError") {
-      alert("Trình duyệt của bạn không hỗ trợ chia sẻ màn hình. Vui lòng sử dụng Chrome, Edge hoặc Firefox mới nhất.");
+      alert("TrÃ¬nh duyá»‡t cá»§a báº¡n khÃ´ng há»— trá»£ chia sáº» mÃ n hÃ¬nh. Vui lÃ²ng sá»­ dá»¥ng Chrome, Edge hoáº·c Firefox má»›i nháº¥t.");
     }
     isScreenSharing = false;
     screenStream = null;
@@ -2631,7 +2631,7 @@ function showIncomingCallOverlay(data) {
   const callerAvatarEl = document.getElementById("incoming-caller-avatar");
   if (callerAvatarEl) callerAvatarEl.src = data.caller_avatar || "/logo.png";
   const callTypeEl = document.getElementById("incoming-call-type");
-  if (callTypeEl) callTypeEl.innerHTML = `<i class="fa-solid fa-phone mr-1"></i> Cuộc gọi bảo mật đang đến...`;
+  if (callTypeEl) callTypeEl.innerHTML = `<i class="fa-solid fa-phone mr-1"></i> Cuá»™c gá»i báº£o máº­t Ä‘ang Ä‘áº¿n...`;
   const incomingCallOverlay = document.getElementById("incoming-call-overlay");
   if (incomingCallOverlay) incomingCallOverlay.classList.remove("hidden");
 
@@ -2664,34 +2664,34 @@ function showCallFrame(name, avatar) {
   const callStatusAvatar = document.getElementById("call-status-avatar");
   if (callStatusAvatar) callStatusAvatar.src = avatar || "/logo.png";
   const callStatusText = document.getElementById("call-status-text");
-  if (callStatusText) callStatusText.textContent = "Đang kết nối cuộc gọi bảo mật...";
+  if (callStatusText) callStatusText.textContent = "Äang káº¿t ná»‘i cuá»™c gá»i báº£o máº­t...";
   
   const statusOverlay = document.getElementById("call-status-overlay");
   if (statusOverlay) statusOverlay.classList.remove("hidden");
   const callModal = document.getElementById("call-modal");
   if (callModal) callModal.classList.remove("hidden");
   
-  // Gán event listener cho nút chia sẻ màn hình
+  // GÃ¡n event listener cho nÃºt chia sáº» mÃ n hÃ¬nh
   const screenShareBtn = document.getElementById("btn-call-screen-share");
   if (screenShareBtn) {
     screenShareBtn.onclick = toggleScreenShare;
-    // Reset về trạng thái ban đầu
+    // Reset vá» tráº¡ng thÃ¡i ban Ä‘áº§u
     isScreenSharing = false;
     screenStream = null;
-    // Kiểm tra hỗ trợ getDisplayMedia
+    // Kiá»ƒm tra há»— trá»£ getDisplayMedia
     const hasScreenShareAPI = typeof navigator.mediaDevices !== 'undefined' && typeof navigator.mediaDevices.getDisplayMedia === 'function';
     if (hasScreenShareAPI) {
       screenShareBtn.className = "w-14 h-14 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center shadow-lg transition-all";
       screenShareBtn.innerHTML = '<i class="fa-solid fa-display text-lg"></i>';
-      screenShareBtn.title = "Chia sẻ màn hình";
+      screenShareBtn.title = "Chia sáº» mÃ n hÃ¬nh";
       screenShareBtn.classList.remove("hidden");
     } else {
-      // Trên mobile: vẫn hiện nút nhưng sẽ thông báo khi bấm
+      // TrÃªn mobile: váº«n hiá»‡n nÃºt nhÆ°ng sáº½ thÃ´ng bÃ¡o khi báº¥m
       screenShareBtn.className = "w-14 h-14 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center shadow-lg transition-all";
       screenShareBtn.innerHTML = '<i class="fa-solid fa-display text-lg"></i>';
-      screenShareBtn.title = "Chia sẻ màn hình (chỉ khả dụng trên máy tính)";
+      screenShareBtn.title = "Chia sáº» mÃ n hÃ¬nh (chá»‰ kháº£ dá»¥ng trÃªn mÃ¡y tÃ­nh)";
       screenShareBtn.classList.remove("hidden");
-      // Override onclick để thông báo
+      // Override onclick Ä‘á»ƒ thÃ´ng bÃ¡o
       screenShareBtn.onclick = function() {
         alert("Tinh nang chia se man hinh chi kha dung tren trinh duyet may tinh (Chrome, Edge, Firefox).\n\nTren dien thoai, ban co the chup anh man hinh va gui file anh vao nhom chat.");
       };
@@ -2719,12 +2719,12 @@ if (btnVideoCall) {
 
 function triggerOutgoingCall(type) {
   const room = roomsList.find(r => r.id == activeRoomId);
-  const name = room ? room.name : "Đồng nghiệp";
+  const name = room ? room.name : "Äá»“ng nghiá»‡p";
   const avatar = room ? room.partner_avatar : "/logo.png";
   
   showCallFrame(name, avatar);
   const statusText = document.getElementById("call-status-text");
-  if (statusText) statusText.textContent = "Đang kết nối cuộc gọi an toàn...";
+  if (statusText) statusText.textContent = "Äang káº¿t ná»‘i cuá»™c gá»i an toÃ n...";
 
   socket.emit("call_request", {
     room_id: activeRoomId,
@@ -2771,7 +2771,7 @@ function closeCallOverlay() {
 }
 
 // =========================================================================
-// 👥 TÍNH NĂNG QUẢN LÝ DANH BẠ & KẾT BẠN TRỰC QUAN (ZALO STANDARD)
+// ðŸ‘¥ TÃNH NÄ‚NG QUáº¢N LÃ DANH Báº  & Káº¾T Báº N TRá»°C QUAN (ZALO STANDARD)
 // =========================================================================
 
 function switchView(view) {
@@ -2858,19 +2858,19 @@ function switchContactsTab(tab) {
   
   if (tab === 'friends') {
     if (menuFriends) menuFriends.className = "w-full flex items-center gap-3 px-4 py-3.5 bg-blue-50 text-zalo-primary font-bold text-xs text-left border-t border-slate-50";
-    if (titleEl) titleEl.textContent = "Danh sách bạn bè";
+    if (titleEl) titleEl.textContent = "Danh sÃ¡ch báº¡n bÃ¨";
     loadFriends();
   } else if (tab === 'groups') {
     if (menuGroups) menuGroups.className = "w-full flex items-center gap-3 px-4 py-3.5 bg-blue-50 text-zalo-primary font-bold text-xs text-left border-t border-slate-50";
-    if (titleEl) titleEl.textContent = "Danh sách nhóm";
+    if (titleEl) titleEl.textContent = "Danh sÃ¡ch nhÃ³m";
     loadGroupRoomsView();
   } else if (tab === 'requests') {
     if (menuRequests) menuRequests.className = "w-full flex items-center justify-between px-4 py-3.5 bg-blue-50 text-zalo-primary font-bold text-xs text-left border-t border-slate-50 relative";
-    if (titleEl) titleEl.textContent = "Lời mời kết bạn";
+    if (titleEl) titleEl.textContent = "Lá»i má»i káº¿t báº¡n";
     loadFriendRequests();
   } else if (tab === 'invites') {
     if (menuInvites) menuInvites.className = "w-full flex items-center gap-3 px-4 py-3.5 bg-blue-50 text-zalo-primary font-bold text-xs text-left border-t border-slate-50";
-    if (titleEl) titleEl.textContent = "Lời mời vào nhóm";
+    if (titleEl) titleEl.textContent = "Lá»i má»i vÃ o nhÃ³m";
     renderInvitesPlaceholder();
   }
 }
@@ -2896,7 +2896,7 @@ function renderFriendsView(friends) {
   let html = `
     <div class="max-w-4xl mx-auto space-y-6 select-none">
       <div>
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Bạn bè (${totalCount})</h3>
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Báº¡n bÃ¨ (${totalCount})</h3>
       </div>
       
       <div class="flex flex-col sm:flex-row gap-3 items-center justify-between pb-4 border-b border-slate-100">
@@ -2904,17 +2904,17 @@ function renderFriendsView(friends) {
           <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
             <i class="fa-solid fa-magnifying-glass text-xs"></i>
           </span>
-          <input type="text" id="contact-search-friends" class="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-100 focus:outline-none focus:ring-1 focus:ring-zalo-primary text-xs" placeholder="Tìm bạn">
+          <input type="text" id="contact-search-friends" class="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-100 focus:outline-none focus:ring-1 focus:ring-zalo-primary text-xs" placeholder="TÃ¬m báº¡n">
         </div>
         
         <div class="flex gap-2 w-full sm:w-auto">
           <select id="contact-sort-friends" class="border border-slate-200 bg-white text-xs rounded-lg px-3 py-2 text-slate-600 focus:outline-none">
-            <option value="name_asc">Tên (A-Z)</option>
-            <option value="name_desc">Tên (Z-A)</option>
+            <option value="name_asc">TÃªn (A-Z)</option>
+            <option value="name_desc">TÃªn (Z-A)</option>
           </select>
           <select id="contact-filter-friends" class="border border-slate-200 bg-white text-xs rounded-lg px-3 py-2 text-slate-600 focus:outline-none">
-            <option value="all">Tất cả</option>
-            <option value="online">Đang hoạt động</option>
+            <option value="all">Táº¥t cáº£</option>
+            <option value="online">Äang hoáº¡t Ä‘á»™ng</option>
           </select>
         </div>
       </div>
@@ -2938,7 +2938,7 @@ function renderFriendsView(friends) {
 function removeVietnameseTones(str) {
   return str.normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
-            .replace(/đ/g, "d").replace(/Đ/g, "D");
+            .replace(/Ä‘/g, "d").replace(/Ä/g, "D");
 }
 
 function renderGroupedFriends(list) {
@@ -2947,7 +2947,7 @@ function renderGroupedFriends(list) {
   container.innerHTML = "";
   
   if (list.length === 0) {
-    container.innerHTML = `<div class="text-center py-12 text-slate-400 text-xs">Chưa có bạn bè nào. Bấm nút Thêm bạn mới ở góc trái để kết nối nhé!</div>`;
+    container.innerHTML = `<div class="text-center py-12 text-slate-400 text-xs">ChÆ°a cÃ³ báº¡n bÃ¨ nÃ o. Báº¥m nÃºt ThÃªm báº¡n má»›i á»Ÿ gÃ³c trÃ¡i Ä‘á»ƒ káº¿t ná»‘i nhÃ©!</div>`;
     return;
   }
   
@@ -2968,7 +2968,7 @@ function renderGroupedFriends(list) {
   if (newFriends.length > 0) {
     const groupDiv = document.createElement("div");
     groupDiv.className = "pb-4";
-    groupDiv.innerHTML = `<h4 class="text-xs font-bold text-blue-600 mb-2 mt-4 select-none">Bạn mới</h4>`;
+    groupDiv.innerHTML = `<h4 class="text-xs font-bold text-blue-600 mb-2 mt-4 select-none">Báº¡n má»›i</h4>`;
     newFriends.forEach(f => {
       groupDiv.appendChild(createFriendRowHTML(f));
     });
@@ -3026,12 +3026,12 @@ function createFriendRowHTML(f) {
         <h4 class="font-bold text-slate-800 text-sm truncate flex items-center gap-1.5">
           ${f.display_name}
         </h4>
-        <p class="text-[10px] text-slate-400 font-bold">${f.is_online ? "Đang hoạt động" : "Ngoại tuyến"}</p>
+        <p class="text-[10px] text-slate-400 font-bold">${f.is_online ? "Äang hoáº¡t Ä‘á»™ng" : "Ngoáº¡i tuyáº¿n"}</p>
       </div>
     </div>
     
     <div class="flex items-center gap-2 select-none">
-      <button onclick="startFriendChat(${f.id}, '${f.display_name}')" class="w-9 h-9 flex items-center justify-center rounded-full bg-blue-50 text-zalo-primary hover:bg-zalo-primary hover:text-white transition-all shadow-sm" title="Nhắn tin">
+      <button onclick="startFriendChat(${f.id}, '${f.display_name}')" class="w-9 h-9 flex items-center justify-center rounded-full bg-blue-50 text-zalo-primary hover:bg-zalo-primary hover:text-white transition-all shadow-sm" title="Nháº¯n tin">
         <i class="fa-solid fa-comment-dots text-sm"></i>
       </button>
       <div class="relative inline-block group">
@@ -3040,7 +3040,7 @@ function createFriendRowHTML(f) {
         </button>
         <div class="absolute right-0 top-10 w-40 bg-white border border-slate-100 shadow-xl rounded-xl py-1 hidden group-hover:block z-30 text-slate-700">
           <button onclick="unfriendUser(${f.id}, '${f.display_name}')" class="w-full text-left px-4 py-2.5 text-xs text-red-500 hover:bg-red-50 flex items-center gap-2 font-bold">
-            <i class="fa-solid fa-user-minus"></i> Hủy kết bạn
+            <i class="fa-solid fa-user-minus"></i> Há»§y káº¿t báº¡n
           </button>
         </div>
       </div>
@@ -3055,7 +3055,7 @@ window.startFriendChat = function(userId, partnerName) {
 };
 
 window.unfriendUser = function(friendId, name) {
-  if (confirm(`Bạn chắc chắn muốn hủy kết bạn với ${name}?`)) {
+  if (confirm(`Báº¡n cháº¯c cháº¯n muá»‘n há»§y káº¿t báº¡n vá»›i ${name}?`)) {
     fetch(`/api/friends/${friendId}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${localStorage.getItem("alonha_token")}` }
@@ -3102,7 +3102,7 @@ function loadGroupRoomsView() {
   
   let listHTML = "";
   if (groups.length === 0) {
-    listHTML = `<div class="text-center py-12 text-slate-400 text-xs select-none">Bạn chưa tham gia nhóm chat nào. Hãy tạo nhóm mới hoặc quét mã tham gia nhé!</div>`;
+    listHTML = `<div class="text-center py-12 text-slate-400 text-xs select-none">Báº¡n chÆ°a tham gia nhÃ³m chat nÃ o. HÃ£y táº¡o nhÃ³m má»›i hoáº·c quÃ©t mÃ£ tham gia nhÃ©!</div>`;
   } else {
     groups.forEach(g => {
       const avatar = g.partner_avatar || "/logo.png";
@@ -3112,11 +3112,11 @@ function loadGroupRoomsView() {
             <img src="${avatar}" class="w-11 h-11 rounded-full object-cover border border-slate-100">
             <div class="min-w-0">
               <h4 class="font-bold text-slate-800 text-sm truncate">${g.name}</h4>
-              <p class="text-[10px] text-slate-400 font-bold mt-0.5 truncate">${g.last_message || "Chưa có cuộc trò chuyện nào"}</p>
+              <p class="text-[10px] text-slate-400 font-bold mt-0.5 truncate">${g.last_message || "ChÆ°a cÃ³ cuá»™c trÃ² chuyá»‡n nÃ o"}</p>
             </div>
           </div>
           <button onclick="startGroupChatFromContacts(${g.id})" class="bg-zalo-primary hover:bg-zalo-hover text-white text-xs font-bold px-4 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1.5">
-            <i class="fa-solid fa-comment-dots"></i> Vào chat
+            <i class="fa-solid fa-comment-dots"></i> VÃ o chat
           </button>
         </div>
       `;
@@ -3126,7 +3126,7 @@ function loadGroupRoomsView() {
   body.innerHTML = `
     <div class="max-w-2xl mx-auto space-y-4">
       <div>
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 select-none">Danh sách nhóm của bạn (${totalCount})</h3>
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 select-none">Danh sÃ¡ch nhÃ³m cá»§a báº¡n (${totalCount})</h3>
         <div class="space-y-1">${listHTML}</div>
       </div>
     </div>
@@ -3156,7 +3156,7 @@ function renderFriendRequestsView(received, sent) {
   
   let receivedHTML = "";
   if (received.length === 0) {
-    receivedHTML = `<div class="text-center py-6 text-slate-400 text-xs">Không có lời mời kết bạn nào cần phê duyệt.</div>`;
+    receivedHTML = `<div class="text-center py-6 text-slate-400 text-xs">KhÃ´ng cÃ³ lá»i má»i káº¿t báº¡n nÃ o cáº§n phÃª duyá»‡t.</div>`;
   } else {
     received.forEach(req => {
       const avatar = req.sender_avatar || "/logo.png";
@@ -3166,12 +3166,12 @@ function renderFriendRequestsView(received, sent) {
             <img src="${avatar}" class="w-11 h-11 rounded-full object-cover border border-slate-100 shrink-0">
             <div class="min-w-0">
               <h4 class="font-bold text-slate-800 text-sm truncate">${req.sender_name}</h4>
-              <p class="text-[10px] text-slate-400 font-bold mt-0.5">Muốn kết bạn với bạn</p>
+              <p class="text-[10px] text-slate-400 font-bold mt-0.5">Muá»‘n káº¿t báº¡n vá»›i báº¡n</p>
             </div>
           </div>
           <div class="flex items-center gap-2 shrink-0">
-            <button onclick="handleFriendRequest(${req.id}, 'accepted')" class="bg-zalo-primary hover:bg-zalo-hover text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm transition-all">Đồng ý</button>
-            <button onclick="handleFriendRequest(${req.id}, 'rejected')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all">Từ chối</button>
+            <button onclick="handleFriendRequest(${req.id}, 'accepted')" class="bg-zalo-primary hover:bg-zalo-hover text-white text-xs font-bold px-3.5 py-1.5 rounded-lg shadow-sm transition-all">Äá»“ng Ã½</button>
+            <button onclick="handleFriendRequest(${req.id}, 'rejected')" class="bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all">Tá»« chá»‘i</button>
           </div>
         </div>
       `;
@@ -3180,7 +3180,7 @@ function renderFriendRequestsView(received, sent) {
   
   let sentHTML = "";
   if (sent.length === 0) {
-    sentHTML = `<div class="text-center py-6 text-slate-400 text-xs">Không có lời mời kết bạn nào đã gửi.</div>`;
+    sentHTML = `<div class="text-center py-6 text-slate-400 text-xs">KhÃ´ng cÃ³ lá»i má»i káº¿t báº¡n nÃ o Ä‘Ã£ gá»­i.</div>`;
   } else {
     sent.forEach(req => {
       const avatar = req.receiver_avatar || "/logo.png";
@@ -3190,10 +3190,10 @@ function renderFriendRequestsView(received, sent) {
             <img src="${avatar}" class="w-11 h-11 rounded-full object-cover border border-slate-100 shrink-0">
             <div class="min-w-0">
               <h4 class="font-bold text-slate-800 text-sm truncate">${req.receiver_name}</h4>
-              <p class="text-[10px] text-slate-400 font-bold mt-0.5">Đã gửi yêu cầu kết bạn</p>
+              <p class="text-[10px] text-slate-400 font-bold mt-0.5">ÄÃ£ gá»­i yÃªu cáº§u káº¿t báº¡n</p>
             </div>
           </div>
-          <button onclick="cancelFriendRequest(${req.id})" class="border border-slate-200 text-slate-500 hover:bg-slate-100 text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all shrink-0">Hủy yêu cầu</button>
+          <button onclick="cancelFriendRequest(${req.id})" class="border border-slate-200 text-slate-500 hover:bg-slate-100 text-xs font-bold px-3.5 py-1.5 rounded-lg transition-all shrink-0">Há»§y yÃªu cáº§u</button>
         </div>
       `;
     });
@@ -3202,11 +3202,11 @@ function renderFriendRequestsView(received, sent) {
   body.innerHTML = `
     <div class="max-w-2xl mx-auto space-y-6 select-none">
       <div>
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3"><i class="fa-solid fa-envelope-open-text text-zalo-primary mr-1"></i> Lời mời kết bạn đã nhận (${received.length})</h3>
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3"><i class="fa-solid fa-envelope-open-text text-zalo-primary mr-1"></i> Lá»i má»i káº¿t báº¡n Ä‘Ã£ nháº­n (${received.length})</h3>
         <div class="space-y-1">${receivedHTML}</div>
       </div>
       <div class="pt-4 border-t border-slate-200">
-        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3"><i class="fa-solid fa-paper-plane text-slate-400 mr-1"></i> Lời mời kết bạn đã gửi (${sent.length})</h3>
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3"><i class="fa-solid fa-paper-plane text-slate-400 mr-1"></i> Lá»i má»i káº¿t báº¡n Ä‘Ã£ gá»­i (${sent.length})</h3>
         <div class="space-y-1">${sentHTML}</div>
       </div>
     </div>
@@ -3230,7 +3230,7 @@ window.handleFriendRequest = function(id, status) {
 };
 
 window.cancelFriendRequest = function(id) {
-  if (confirm("Bạn muốn hủy yêu cầu kết bạn này?")) {
+  if (confirm("Báº¡n muá»‘n há»§y yÃªu cáº§u káº¿t báº¡n nÃ y?")) {
     fetch(`/api/friends/request/${id}/cancel`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${localStorage.getItem("alonha_token")}` }
@@ -3252,8 +3252,8 @@ function renderInvitesPlaceholder() {
       <div class="w-16 h-16 bg-blue-50 text-zalo-primary rounded-full flex items-center justify-center text-2xl mx-auto">
         <i class="fa-solid fa-people-group"></i>
       </div>
-      <h4 class="font-bold text-slate-800 text-sm">Lời mời vào nhóm</h4>
-      <p class="text-xs text-slate-400 leading-relaxed">Khi đồng nghiệp chia sẻ link hoặc thêm bạn trực tiếp, bạn sẽ tham gia nhóm đó ngay lập tức. Tính năng nhận tin phê duyệt từ Trưởng nhóm hoạt động tự động.</p>
+      <h4 class="font-bold text-slate-800 text-sm">Lá»i má»i vÃ o nhÃ³m</h4>
+      <p class="text-xs text-slate-400 leading-relaxed">Khi Ä‘á»“ng nghiá»‡p chia sáº» link hoáº·c thÃªm báº¡n trá»±c tiáº¿p, báº¡n sáº½ tham gia nhÃ³m Ä‘Ã³ ngay láº­p tá»©c. TÃ­nh nÄƒng nháº­n tin phÃª duyá»‡t tá»« TrÆ°á»Ÿng nhÃ³m hoáº¡t Ä‘á»™ng tá»± Ä‘á»™ng.</p>
     </div>
   `;
 }
@@ -3293,7 +3293,7 @@ function updateRequestsBadge(count) {
 // =========================================================================
 
 function initUIEventListeners() {
-  // Bắt sự kiện click mở menu Avatar
+  // Báº¯t sá»± kiá»‡n click má»Ÿ menu Avatar
   const userMyAvatar = document.getElementById("user-my-avatar");
   if (userMyAvatar) {
     userMyAvatar.addEventListener("click", (e) => {
@@ -3303,7 +3303,7 @@ function initUIEventListeners() {
     });
   }
 
-  // Tự động đóng menu khi click ra ngoài vùng menu
+  // Tá»± Ä‘á»™ng Ä‘Ã³ng menu khi click ra ngoÃ i vÃ¹ng menu
   document.addEventListener("click", (e) => {
     const menu = document.getElementById("account-dropdown-menu");
     if (menu && !menu.classList.contains("hidden") && !e.target.closest("#account-dropdown-menu") && e.target.id !== "user-my-avatar") {
@@ -3311,7 +3311,7 @@ function initUIEventListeners() {
     }
   });
 
-  // Bật/tắt mic/camera WebRTC
+  // Báº­t/táº¯t mic/camera WebRTC
   const toggleMicBtn = document.getElementById("btn-call-toggle-mic");
   if (toggleMicBtn) toggleMicBtn.onclick = toggleMic;
   const toggleCamBtn = document.getElementById("btn-call-toggle-cam");
@@ -3349,7 +3349,7 @@ function initUIEventListeners() {
       const input = document.getElementById("add-friend-search-input");
       if (input) input.value = "";
       const results = document.getElementById("add-friend-results-list");
-      if (results) results.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none">Nhập thông tin tìm kiếm phía trên để tìm bạn bè.</p>`;
+      if (results) results.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none">Nháº­p thÃ´ng tin tÃ¬m kiáº¿m phÃ­a trÃªn Ä‘á»ƒ tÃ¬m báº¡n bÃ¨.</p>`;
       const modal = document.getElementById("add-friend-modal");
       if (modal) modal.classList.remove("hidden");
     };
@@ -3370,7 +3370,7 @@ function initUIEventListeners() {
       const list = document.getElementById("add-friend-results-list");
       if (!list) return;
       if (!q) {
-        list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none">Nhập thông tin tìm kiếm phía trên để tìm bạn bè.</p>`;
+        list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none">Nháº­p thÃ´ng tin tÃ¬m kiáº¿m phÃ­a trÃªn Ä‘á»ƒ tÃ¬m báº¡n bÃ¨.</p>`;
         return;
       }
       
@@ -3381,7 +3381,7 @@ function initUIEventListeners() {
       .then(users => {
         list.innerHTML = "";
         if (users.length === 0) {
-          list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none">Không tìm thấy thành viên phù hợp.</p>`;
+          list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none">KhÃ´ng tÃ¬m tháº¥y thÃ nh viÃªn phÃ¹ há»£p.</p>`;
           return;
         }
         
@@ -3390,15 +3390,15 @@ function initUIEventListeners() {
           let actionBtn = "";
           
           if (!u.friendship_status) {
-            actionBtn = `<button onclick="sendFriendRequest(${u.id}, '${u.display_name}')" class="bg-zalo-primary hover:bg-zalo-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all flex items-center gap-1 shrink-0"><i class="fa-solid fa-user-plus"></i> Kết bạn</button>`;
+            actionBtn = `<button onclick="sendFriendRequest(${u.id}, '${u.display_name}')" class="bg-zalo-primary hover:bg-zalo-hover text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all flex items-center gap-1 shrink-0"><i class="fa-solid fa-user-plus"></i> Káº¿t báº¡n</button>`;
           } else if (u.friendship_status === 'pending') {
             if (u.friendship_sender_id === currentUser.id) {
-              actionBtn = `<span class="text-xs text-slate-400 bg-slate-100 px-3 py-1.5 rounded-lg select-none font-semibold shrink-0">Đã gửi yêu cầu</span>`;
+              actionBtn = `<span class="text-xs text-slate-400 bg-slate-100 px-3 py-1.5 rounded-lg select-none font-semibold shrink-0">ÄÃ£ gá»­i yÃªu cáº§u</span>`;
             } else {
-              actionBtn = `<button onclick="handleFriendRequest(${u.friendship_id}, 'accepted')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all shrink-0">Đồng ý</button>`;
+              actionBtn = `<button onclick="handleFriendRequest(${u.friendship_id}, 'accepted')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all shrink-0">Äá»“ng Ã½</button>`;
             }
           } else if (u.friendship_status === 'accepted') {
-            actionBtn = `<span class="text-xs text-green-600 bg-green-50 px-3 py-1.5 rounded-lg select-none font-bold shrink-0"><i class="fa-solid fa-check-double"></i> Bạn bè</span>`;
+            actionBtn = `<span class="text-xs text-green-600 bg-green-50 px-3 py-1.5 rounded-lg select-none font-bold shrink-0"><i class="fa-solid fa-check-double"></i> Báº¡n bÃ¨</span>`;
           }
           
           const div = document.createElement("div");
@@ -3429,7 +3429,7 @@ function initUIEventListeners() {
     .then(data => {
       if (data.error) alert(data.error);
       else {
-        alert(`Đã gửi yêu cầu kết bạn đến [${name}]!`);
+        alert(`ÄÃ£ gá»­i yÃªu cáº§u káº¿t báº¡n Ä‘áº¿n [${name}]!`);
         const input = document.getElementById("add-friend-search-input");
         if (input) input.dispatchEvent(new Event('input'));
         updateContactsBadges();
@@ -3539,16 +3539,16 @@ function initUIEventListeners() {
       .then(data => {
         if (data.error) alert(data.error);
         else {
-          alert("Đăng ký thành công! Vui lòng chuyển sang tab Đăng Nhập.");
+          alert("ÄÄƒng kÃ½ thÃ nh cÃ´ng! Vui lÃ²ng chuyá»ƒn sang tab ÄÄƒng Nháº­p.");
           const btnTabLogin = document.getElementById("btn-tab-login");
           if (btnTabLogin) btnTabLogin.click();
         }
       })
-      .catch(() => alert("Gặp lỗi liên kết khi đăng ký tài khoản mới!"));
+      .catch(() => alert("Gáº·p lá»—i liÃªn káº¿t khi Ä‘Äƒng kÃ½ tÃ i khoáº£n má»›i!"));
     };
   }
 
-  // Mở Modal Hồ sơ xem trước (Chuẩn Zalo)
+  // Má»Ÿ Modal Há»“ sÆ¡ xem trÆ°á»›c (Chuáº©n Zalo)
   const showProfileZaloBtn = document.getElementById("btn-show-profile-zalo");
   if (showProfileZaloBtn) {
     showProfileZaloBtn.onclick = () => {
@@ -3560,14 +3560,14 @@ function initUIEventListeners() {
       const profileName = document.getElementById("zalo-profile-name");
       if (profileName) profileName.textContent = currentUser.display_name;
       const profileGender = document.getElementById("zalo-profile-gender");
-      if (profileGender) profileGender.textContent = currentUser.gender || "Chưa cập nhật";
+      if (profileGender) profileGender.textContent = currentUser.gender || "ChÆ°a cáº­p nháº­t";
       const profilePhone = document.getElementById("zalo-profile-phone");
-      if (profilePhone) profilePhone.textContent = currentUser.phone_number || "Chưa cập nhật";
+      if (profilePhone) profilePhone.textContent = currentUser.phone_number || "ChÆ°a cáº­p nháº­t";
       
-      let dobStr = "Chưa cập nhật";
+      let dobStr = "ChÆ°a cáº­p nháº­t";
       if (currentUser.dob) {
         const d = new Date(currentUser.dob);
-        dobStr = `${d.getDate().toString().padStart(2, '0')} tháng ${d.getMonth() + 1}, ${d.getFullYear()}`;
+        dobStr = `${d.getDate().toString().padStart(2, '0')} thÃ¡ng ${d.getMonth() + 1}, ${d.getFullYear()}`;
       }
       const profileDob = document.getElementById("zalo-profile-dob");
       if (profileDob) profileDob.textContent = dobStr;
@@ -3577,7 +3577,7 @@ function initUIEventListeners() {
     };
   }
 
-  // Đóng Modal Hồ sơ xem trước
+  // ÄÃ³ng Modal Há»“ sÆ¡ xem trÆ°á»›c
   const closeZaloProfileBtn = document.getElementById("btn-close-zalo-profile");
   if (closeZaloProfileBtn) {
     closeZaloProfileBtn.onclick = () => {
@@ -3586,7 +3586,7 @@ function initUIEventListeners() {
     };
   }
 
-  // Nút Cập nhật (Chuyển sang form Edit cũ)
+  // NÃºt Cáº­p nháº­t (Chuyá»ƒn sang form Edit cÅ©)
   const openEditProfileBtn = document.getElementById("btn-open-edit-profile");
   if (openEditProfileBtn) {
     openEditProfileBtn.onclick = () => {
@@ -3598,7 +3598,7 @@ function initUIEventListeners() {
       const phoneInput = document.getElementById("profile-phone-input");
       if (phoneInput) phoneInput.value = currentUser.phone_number || "";
       const genderSelect = document.getElementById("profile-gender-select");
-      if (genderSelect) genderSelect.value = currentUser.gender || "Khác";
+      if (genderSelect) genderSelect.value = currentUser.gender || "KhÃ¡c";
       const dobInput = document.getElementById("profile-dob-input");
       if (dobInput) dobInput.value = currentUser.dob ? currentUser.dob.split('T')[0] : "";
       const avatarPreview = document.getElementById("profile-avatar-preview");
@@ -3608,7 +3608,7 @@ function initUIEventListeners() {
     };
   }
 
-  // Mở Modal Cài đặt tổng (Chuẩn Zalo)
+  // Má»Ÿ Modal CÃ i Ä‘áº·t tá»•ng (Chuáº©n Zalo)
   const showSettingsZaloBtn = document.getElementById("btn-show-settings-zalo");
   if (showSettingsZaloBtn) {
     showSettingsZaloBtn.onclick = () => {
@@ -3619,7 +3619,7 @@ function initUIEventListeners() {
     };
   }
 
-  // Đóng Modal Cài đặt tổng
+  // ÄÃ³ng Modal CÃ i Ä‘áº·t tá»•ng
   const closeZaloSettingsBtn = document.getElementById("btn-close-zalo-settings");
   if (closeZaloSettingsBtn) {
     closeZaloSettingsBtn.onclick = () => {
@@ -3628,7 +3628,7 @@ function initUIEventListeners() {
     };
   }
 
-  // Nút bấm bên trong Cài đặt tổng để gọi Form mã PIN
+  // NÃºt báº¥m bÃªn trong CÃ i Ä‘áº·t tá»•ng Ä‘á»ƒ gá»i Form mÃ£ PIN
   const triggerOldSettingsBtn = document.getElementById("btn-trigger-old-settings");
   if (triggerOldSettingsBtn) {
     triggerOldSettingsBtn.onclick = () => {
@@ -3641,7 +3641,7 @@ function initUIEventListeners() {
     };
   }
 
-  // Mở Admin Panel
+  // Má»Ÿ Admin Panel
   const openAdminPanelBtn = document.getElementById('btn-open-admin-panel');
   const adminPanelModal = document.getElementById('admin-panel-modal');
   const closeAdminPanelBtn = document.getElementById('btn-close-admin-panel');
@@ -3713,7 +3713,7 @@ function initUIEventListeners() {
     }
   });
 
-  // Đăng xuất từ Menu Zalo mới
+  // ÄÄƒng xuáº¥t tá»« Menu Zalo má»›i
   const logoutSidebarZaloBtn = document.getElementById("btn-logout-sidebar-zalo");
   if (logoutSidebarZaloBtn) {
     logoutSidebarZaloBtn.onclick = () => {
@@ -3761,7 +3761,7 @@ function initUIEventListeners() {
 
       const d = displayNameInput ? displayNameInput.value : "";
       const p = phoneInput ? phoneInput.value : "";
-      const g = genderSelect ? genderSelect.value : "Khác";
+      const g = genderSelect ? genderSelect.value : "KhÃ¡c";
       const dob = dobInput ? dobInput.value : "";
 
       fetch('/api/users/me', {
@@ -3784,13 +3784,13 @@ function initUIEventListeners() {
           updateMyProfileUI();
           const profileModal = document.getElementById("profile-modal");
           if (profileModal) profileModal.classList.add("hidden");
-          alert("Cập nhật hồ sơ cá nhân thành công!");
+          alert("Cáº­p nháº­t há»“ sÆ¡ cÃ¡ nhÃ¢n thÃ nh cÃ´ng!");
         }
       });
     };
   }
 
-  // Cấu hình PIN
+  // Cáº¥u hÃ¬nh PIN
   const showSettingsHandler = () => {
     const pinInput = document.getElementById("settings-pin-input");
     if (pinInput) pinInput.value = currentUser.pin_code || "";
@@ -3834,7 +3834,7 @@ function initUIEventListeners() {
       .then(res => res.json())
       .then(data => {
         currentUser = data.user;
-        alert("Đã lưu mã PIN an toàn bảo mật!");
+        alert("ÄÃ£ lÆ°u mÃ£ PIN an toÃ n báº£o máº­t!");
         const settingsModal = document.getElementById("settings-modal");
         if (settingsModal) settingsModal.classList.add("hidden");
       });
@@ -3855,7 +3855,7 @@ function initUIEventListeners() {
   const btnLogout = document.getElementById("btn-logout");
   if (btnLogout) btnLogout.onclick = logoutTrigger;
 
-  // QUAY LẠI TỪ MÀN HÌNH CHAT TRÊN DI ĐỘNG
+  // QUAY Láº I Tá»ª MÃ€N HÃŒNH CHAT TRÃŠN DI Äá»˜NG
   const btnBackToRooms = document.getElementById("btn-back-to-rooms");
   if (btnBackToRooms) {
     btnBackToRooms.onclick = () => {
@@ -4019,7 +4019,7 @@ function initUIEventListeners() {
       .then(data => {
         if (data.error) alert(data.error);
         else {
-          alert("Cập nhật ảnh đại diện nhóm thành công!");
+          alert("Cáº­p nháº­t áº£nh Ä‘áº¡i diá»‡n nhÃ³m thÃ nh cÃ´ng!");
           loadGroupDetails(activeRoomId);
         }
       });
@@ -4028,7 +4028,7 @@ function initUIEventListeners() {
 
   const executeCopy = (text) => {
     navigator.clipboard.writeText(text).then(() => {
-      alert("Đã sao chép liên kết vào bộ nhớ tạm thành công!");
+      alert("ÄÃ£ sao chÃ©p liÃªn káº¿t vÃ o bá»™ nhá»› táº¡m thÃ nh cÃ´ng!");
     });
   };
 
@@ -4055,9 +4055,9 @@ function initUIEventListeners() {
     socket.emit("send_message", {
       room_id: activeRoomId,
       sender_id: currentUser.id,
-      message_text: `🔔 Mời tham gia nhóm chat thông qua liên kết: ${link}`
+      message_text: `ðŸ”” Má»i tham gia nhÃ³m chat thÃ´ng qua liÃªn káº¿t: ${link}`
     });
-    alert("Đã gửi liên kết tham gia vào cuộc hội thoại thành công!");
+    alert("ÄÃ£ gá»­i liÃªn káº¿t tham gia vÃ o cuá»™c há»™i thoáº¡i thÃ nh cÃ´ng!");
   };
 
   const btnShareGroupLink = document.getElementById("btn-share-group-link");
@@ -4163,7 +4163,7 @@ function initUIEventListeners() {
         const btnSubmitAddMember = document.getElementById("btn-submit-add-member");
         
         if (nonMembers.length === 0) {
-          list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none">Mọi thành viên hệ thống đã tham gia nhóm này!</p>`;
+          list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none">Má»i thÃ nh viÃªn há»‡ thá»‘ng Ä‘Ã£ tham gia nhÃ³m nÃ y!</p>`;
           if (btnSubmitAddMember) btnSubmitAddMember.disabled = true;
         } else {
           if (btnSubmitAddMember) btnSubmitAddMember.disabled = false;
@@ -4201,7 +4201,7 @@ function initUIEventListeners() {
       const memberIds = Array.from(checked).map(el => parseInt(el.value));
 
       if (memberIds.length === 0) {
-        alert("Hãy chọn tối thiểu 1 thành viên để thêm!");
+        alert("HÃ£y chá»n tá»‘i thiá»ƒu 1 thÃ nh viÃªn Ä‘á»ƒ thÃªm!");
         return;
       }
 
@@ -4225,7 +4225,7 @@ function initUIEventListeners() {
   const btnGroupLeave = document.getElementById("btn-group-leave");
   if (btnGroupLeave) {
     btnGroupLeave.onclick = () => {
-      if (confirm("Bạn có chắc chắn muốn rời khỏi nhóm này?")) {
+      if (confirm("Báº¡n cÃ³ cháº¯c cháº¯n muá»‘n rá»i khá»i nhÃ³m nÃ y?")) {
         fetch(`/api/rooms/${activeRoomId}/members/${currentUser.id}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem("alonha_token")}` }
@@ -4234,7 +4234,7 @@ function initUIEventListeners() {
         .then(data => {
           if (data.error) alert(data.error);
           else {
-            alert("Bạn đã rời nhóm thành công.");
+            alert("Báº¡n Ä‘Ã£ rá»i nhÃ³m thÃ nh cÃ´ng.");
             location.reload();
           }
         });
@@ -4245,7 +4245,7 @@ function initUIEventListeners() {
   const btnGroupDissolve = document.getElementById("btn-group-dissolve");
   if (btnGroupDissolve) {
     btnGroupDissolve.onclick = () => {
-      if (confirm("CẢNH BÁO: Hành động này sẽ GIẢI TÁN nhóm vĩnh viễn và xóa toàn bộ dữ liệu đối với mọi thành viên. Bạn chắc chắn chứ?")) {
+      if (confirm("Cáº¢NH BÃO: HÃ nh Ä‘á»™ng nÃ y sáº½ GIáº¢I TÃN nhÃ³m vÄ©nh viá»…n vÃ  xÃ³a toÃ n bá»™ dá»¯ liá»‡u Ä‘á»‘i vá»›i má»i thÃ nh viÃªn. Báº¡n cháº¯c cháº¯n chá»©?")) {
         fetch(`/api/rooms/${activeRoomId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem("alonha_token")}` }
@@ -4254,7 +4254,7 @@ function initUIEventListeners() {
         .then(data => {
           if (data.error) alert(data.error);
           else {
-            alert("Đã giải tán nhóm thành công.");
+            alert("ÄÃ£ giáº£i tÃ¡n nhÃ³m thÃ nh cÃ´ng.");
             location.reload();
           }
         });
@@ -4354,7 +4354,7 @@ window.pressPinKey = function(num) {
         tempRoomToUnlock = null;
       }
     } else {
-      alert("Mã PIN bảo mật không chính xác!");
+      alert("MÃ£ PIN báº£o máº­t khÃ´ng chÃ­nh xÃ¡c!");
       currentPinInput = "";
       updatePinDots();
     }
@@ -4391,13 +4391,13 @@ function updateChatHeaderStatus() {
 
   if (room && status && dot) {
     if (room.is_group) {
-      status.textContent = "Nhóm làm việc chung";
+      status.textContent = "NhÃ³m lÃ m viá»‡c chung";
       dot.className = "absolute bottom-0 right-0 w-3 h-3 bg-blue-500 border-2 border-white rounded-full";
-    } else if (room.name === 'Cloud của tôi') {
-      status.textContent = "Kho lưu trữ dữ liệu cá nhân";
+    } else if (room.name === 'Cloud cá»§a tÃ´i') {
+      status.textContent = "Kho lÆ°u trá»¯ dá»¯ liá»‡u cÃ¡ nhÃ¢n";
       dot.className = "absolute bottom-0 right-0 w-3 h-3 bg-blue-500 border-2 border-white rounded-full";
     } else {
-      status.textContent = "Kết nối bảo mật";
+      status.textContent = "Káº¿t ná»‘i báº£o máº­t";
       dot.className = "absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full";
     }
     dot.classList.remove("hidden");
@@ -4430,7 +4430,7 @@ function formatTime(isoStr) {
 }
 
 // =========================================================================
-// 📍 CHIA SẺ VỊ TRÍ (LOCATION SHARING)
+// ðŸ“ CHIA Sáºº Vá»Š TRÃ (LOCATION SHARING)
 // =========================================================================
 let locationPickerMap = null;
 let locationPickerMarker = null;
@@ -4499,7 +4499,7 @@ function initLocationPicker(lat, lng) {
   
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    attribution: '© OpenStreetMap'
+    attribution: 'Â© OpenStreetMap'
   }).addTo(locationPickerMap);
   
   locationPickerMarker = L.marker([lat, lng], { draggable: true }).addTo(locationPickerMap);
@@ -4534,17 +4534,17 @@ async function reverseGeocode(lat, lng) {
   const confirmBtn = document.getElementById("btn-loc-confirm-pick");
   
   if (selectedInfo) selectedInfo.classList.remove("hidden");
-  if (nameEl) nameEl.textContent = "Đang xác định địa chỉ...";
+  if (nameEl) nameEl.textContent = "Äang xÃ¡c Ä‘á»‹nh Ä‘á»‹a chá»‰...";
   if (addressEl) addressEl.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
   
-  selectedLocation = { lat, lng, name: "Vị trí đã chọn", address: `${lat.toFixed(6)}, ${lng.toFixed(6)}` };
+  selectedLocation = { lat, lng, name: "Vá»‹ trÃ­ Ä‘Ã£ chá»n", address: `${lat.toFixed(6)}, ${lng.toFixed(6)}` };
   if (confirmBtn) confirmBtn.classList.remove("hidden");
   
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=vi`);
     const data = await res.json();
     if (data && data.display_name) {
-      const displayName = data.name || data.address?.road || "Vị trí";
+      const displayName = data.name || data.address?.road || "Vá»‹ trÃ­";
       if (nameEl) nameEl.textContent = displayName;
       if (addressEl) addressEl.textContent = data.display_name;
       selectedLocation = { lat, lng, name: displayName, address: data.display_name };
@@ -4591,7 +4591,7 @@ if (btnShareLocation) {
           if (loading) loading.classList.add("hidden");
           if (error) {
             error.classList.remove("hidden");
-            error.textContent = "Không thể lấy vị trí của bạn. Hãy thử chọn trên bản đồ hoặc kiểm tra quyền truy cập vị trí.";
+            error.textContent = "KhÃ´ng thá»ƒ láº¥y vá»‹ trÃ­ cá»§a báº¡n. HÃ£y thá»­ chá»n trÃªn báº£n Ä‘á»“ hoáº·c kiá»ƒm tra quyá»n truy cáº­p vá»‹ trÃ­.";
           }
           // Still show map at a default location (Vietnam)
           if (miniMap) miniMap.classList.remove("hidden");
@@ -4625,7 +4625,7 @@ if (btnLocSendCurrent) {
     if (!navigator.geolocation) {
       if (error) {
         error.classList.remove("hidden");
-        error.textContent = "Trình duyệt không hỗ trợ định vị GPS.";
+        error.textContent = "TrÃ¬nh duyá»‡t khÃ´ng há»— trá»£ Ä‘á»‹nh vá»‹ GPS.";
       }
       if (loading) loading.classList.add("hidden");
       return;
@@ -4636,14 +4636,14 @@ if (btnLocSendCurrent) {
         const { latitude, longitude } = position.coords;
         
         // Try to get address
-        let name = "Vị trí hiện tại";
+        let name = "Vá»‹ trÃ­ hiá»‡n táº¡i";
         let address = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
         
         try {
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&accept-language=vi`);
           const data = await res.json();
           if (data && data.display_name) {
-            name = data.name || "Vị trí hiện tại";
+            name = data.name || "Vá»‹ trÃ­ hiá»‡n táº¡i";
             address = data.display_name;
           }
         } catch (e) {}
@@ -4655,7 +4655,7 @@ if (btnLocSendCurrent) {
         if (loading) loading.classList.add("hidden");
         if (error) {
           error.classList.remove("hidden");
-          error.textContent = "Không thể lấy vị trí của bạn. Hãy kiểm tra quyền truy cập vị trí và thử lại.";
+          error.textContent = "KhÃ´ng thá»ƒ láº¥y vá»‹ trÃ­ cá»§a báº¡n. HÃ£y kiá»ƒm tra quyá»n truy cáº­p vá»‹ trÃ­ vÃ  thá»­ láº¡i.";
         }
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
@@ -4704,7 +4704,7 @@ window.openLocationView = function(lat, lng, name, address) {
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '© OpenStreetMap'
+      attribution: 'Â© OpenStreetMap'
     }).addTo(map);
     
     L.marker([lat, lng]).addTo(map)
@@ -4738,7 +4738,7 @@ if (btnCloseLocationView) {
 }
 
 // =========================================================================
-// 🎤 VOICE MESSAGE LOGIC
+// ðŸŽ¤ VOICE MESSAGE LOGIC
 // =========================================================================
 let mediaRecorder;
 let audioChunks = [];
@@ -4796,7 +4796,7 @@ if (btnStartRecord) {
   btnStartRecord.onclick = async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Trình duyệt không hỗ trợ ghi âm');
+        throw new Error('TrÃ¬nh duyá»‡t khÃ´ng há»— trá»£ ghi Ã¢m');
       }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mimeType = getSupportedAudioMimeType();
@@ -4811,14 +4811,14 @@ if (btnStartRecord) {
         }
       };
 
-      // Không gán onstop ở đây nữa - nó sẽ bị ghi đè khi nhấn Gửi.
-      // Dữ liệu audio được thu thập qua ondataavailable vào mảng audioChunks.
-      // Trường hợp nhấn Hủy, chỉ cần dừng recorder và reset.
+      // KhÃ´ng gÃ¡n onstop á»Ÿ Ä‘Ã¢y ná»¯a - nÃ³ sáº½ bá»‹ ghi Ä‘Ã¨ khi nháº¥n Gá»­i.
+      // Dá»¯ liá»‡u audio Ä‘Æ°á»£c thu tháº­p qua ondataavailable vÃ o máº£ng audioChunks.
+      // TrÆ°á»ng há»£p nháº¥n Há»§y, chá»‰ cáº§n dá»«ng recorder vÃ  reset.
       mediaRecorder.onstop = null;
 
       mediaRecorder.onerror = (event) => {
         console.error('MediaRecorder error:', event.error || event);
-        alert('Ghi âm bị lỗi. Vui lòng thử lại.');
+        alert('Ghi Ã¢m bá»‹ lá»—i. Vui lÃ²ng thá»­ láº¡i.');
         stopActiveRecording();
       };
 
@@ -4834,7 +4834,7 @@ if (btnStartRecord) {
       }, 1000);
 
     } catch (err) {
-      alert("Không thể truy cập Micro. Vui lòng cấp quyền Microphone trên trình duyệt!");
+      alert("KhÃ´ng thá»ƒ truy cáº­p Micro. Vui lÃ²ng cáº¥p quyá»n Microphone trÃªn trÃ¬nh duyá»‡t!");
       console.error(err);
     }
   };
@@ -4852,14 +4852,14 @@ if (btnCancelRecord) {
 if (btnSendRecord) {
   btnSendRecord.onclick = () => {
     if (!mediaRecorder || mediaRecorder.state === "inactive") {
-      alert("Chưa có đoạn ghi âm hợp lệ để gửi. Vui lòng thu lại.");
+      alert("ChÆ°a cÃ³ Ä‘oáº¡n ghi Ã¢m há»£p lá»‡ Ä‘á»ƒ gá»­i. Vui lÃ²ng thu láº¡i.");
       return;
     }
 
     const recorder = mediaRecorder;
     const mimeType = recorder.mimeType || activeRecordingMimeType || 'audio/webm';
 
-    // Gọi requestData() để lấy chunk cuối cùng trước khi stop
+    // Gá»i requestData() Ä‘á»ƒ láº¥y chunk cuá»‘i cÃ¹ng trÆ°á»›c khi stop
     try {
       recorder.requestData();
     } catch (e) {
@@ -4867,7 +4867,7 @@ if (btnSendRecord) {
     }
 
     recorder.onstop = () => {
-      // Tạo blob TRỰC TIẾP từ audioChunks (đã có đủ data nhờ requestData + ondataavailable)
+      // Táº¡o blob TRá»°C TIáº¾P tá»« audioChunks (Ä‘Ã£ cÃ³ Ä‘á»§ data nhá» requestData + ondataavailable)
       const audioBlob = new Blob(audioChunks, { type: mimeType });
       console.log('[voice-debug] final blob', {
         chunks: audioChunks.length,
@@ -4875,24 +4875,24 @@ if (btnSendRecord) {
         mimeType
       });
       
-      // Tạo File từ blob và gửi ngay, KHÔNG gọi stopActiveRecording trước
+      // Táº¡o File tá»« blob vÃ  gá»­i ngay, KHÃ”NG gá»i stopActiveRecording trÆ°á»›c
       const extension = getVoiceFileExtension(mimeType);
       const audioFile = new File([audioBlob], `voice_${Date.now()}.${extension}`, { type: mimeType });
       
-      // Dọn dẹp resources recording trước
+      // Dá»n dáº¹p resources recording trÆ°á»›c
       stopActiveRecording();
       
       // Upload file qua API
       uploadFile(audioFile);
     };
 
-    // Dừng recorder
+    // Dá»«ng recorder
     if (recorder.state !== 'inactive') recorder.stop();
   };
 }
 
 // =========================================================================
-// 🚀 KHỐI LOGIC SỬA LỖI TẠO NHÓM & LIỆT NÚT HỆ THỐNG MƯỢT MÀ
+// ðŸš€ KHá»I LOGIC Sá»¬A Lá»–I Táº O NHÃ“M & LIá»†T NÃšT Há»† THá»NG MÆ¯á»¢T MÃ€
 // =========================================================================
 
 const openCreateGroupBtn = document.getElementById("btn-open-create-group");
@@ -4902,7 +4902,7 @@ if (openCreateGroupBtn) {
     const list = document.getElementById("create-group-members-list");
     if (!list) return;
     
-    list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none"><i class="fa-solid fa-spinner animate-spin mr-1"></i> Đang nạp danh bạ...</p>`;
+    list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none"><i class="fa-solid fa-spinner animate-spin mr-1"></i> Äang náº¡p danh báº¡...</p>`;
     
     fetch('/api/friends', { 
       headers: { 'Authorization': `Bearer ${localStorage.getItem("alonha_token")}` } 
@@ -4911,7 +4911,7 @@ if (openCreateGroupBtn) {
     .then(friends => {
       list.innerHTML = "";
       if (!friends || friends.length === 0) {
-        list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none">Bạn cần kết bạn trước khi khởi tạo nhóm trò chuyện.</p>`;
+        list.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 select-none">Báº¡n cáº§n káº¿t báº¡n trÆ°á»›c khi khá»Ÿi táº¡o nhÃ³m trÃ² chuyá»‡n.</p>`;
         return;
       }
       friends.forEach(u => {
@@ -4928,7 +4928,7 @@ if (openCreateGroupBtn) {
       });
     })
     .catch(err => {
-      list.innerHTML = `<p class="text-xs text-red-500 text-center py-4 select-none">Không thể nạp danh sách đồng nghiệp.</p>`;
+      list.innerHTML = `<p class="text-xs text-red-500 text-center py-4 select-none">KhÃ´ng thá»ƒ náº¡p danh sÃ¡ch Ä‘á»“ng nghiá»‡p.</p>`;
       console.error(err);
     });
     
@@ -4956,7 +4956,7 @@ if (submitCreateGroupBtn) {
     const memberIds = Array.from(checked).map(el => parseInt(el.value));
 
     if (!name) { 
-      alert("Vui lòng điền tên nhóm chat!"); 
+      alert("Vui lÃ²ng Ä‘iá»n tÃªn nhÃ³m chat!"); 
       return; 
     }
 
@@ -4971,7 +4971,7 @@ if (submitCreateGroupBtn) {
     .then(res => res.json())
     .then(room => {
       if (room.error) {
-        alert("Lỗi từ hệ thống: " + room.error);
+        alert("Lá»—i tá»« há»‡ thá»‘ng: " + room.error);
         return;
       }
       const modal = document.getElementById("create-group-modal");
@@ -4980,27 +4980,27 @@ if (submitCreateGroupBtn) {
       loadRooms().then(() => handleRoomSelection(room.id));
     })
     .catch(err => {
-      alert("Gặp sự cố đường truyền khi khởi tạo nhóm!");
+      alert("Gáº·p sá»± cá»‘ Ä‘Æ°á»ng truyá»n khi khá»Ÿi táº¡o nhÃ³m!");
       console.error(err);
     });
   };
 }
 // =========================================================================
-// 🔄 CHUYỂN TIẾP TIN NHẮN (FORWARD)
+// ðŸ”„ CHUYá»‚N TIáº¾P TIN NHáº®N (FORWARD)
 // =========================================================================
 let forwardMessageData = null;
 
-// Sửa hàm openMessageActionMenu để lưu dữ liệu Forward
+// Sá»­a hÃ m openMessageActionMenu Ä‘á»ƒ lÆ°u dá»¯ liá»‡u Forward
 const originalOpenMessageActionMenu = window.openMessageActionMenu;
 window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedName, encodedFileUrl) {
-  // Lấy raw file_url từ dataset của message div
+  // Láº¥y raw file_url tá»« dataset cá»§a message div
   const msgDiv = document.getElementById("msg-" + messageId);
   const rawFileUrl = msgDiv ? msgDiv.dataset.rawFileUrl : null;
   forwardMessageData = {
     messageId,
     text: decodeURIComponent(encodedText),
     isMe,
-    displayName: decodeURIComponent(encodedName || "Thành viên"),
+    displayName: decodeURIComponent(encodedName || "ThÃ nh viÃªn"),
     fileUrl: rawFileUrl
   };
   if (originalOpenMessageActionMenu) {
@@ -5008,11 +5008,11 @@ window.openMessageActionMenu = function(messageId, encodedText, isMe, encodedNam
   }
 };
 
-// Xử lý nút Forward trong context menu
+// Xá»­ lÃ½ nÃºt Forward trong context menu
 document.getElementById("ctx-btn-forward")?.addEventListener("click", function() {
   document.getElementById("msg-context-menu")?.classList.add("hidden");
   if (!forwardMessageData) {
-    alert("Không tìm thấy tin nhắn để chuyển tiếp.");
+    alert("KhÃ´ng tÃ¬m tháº¥y tin nháº¯n Ä‘á»ƒ chuyá»ƒn tiáº¿p.");
     return;
   }
   openForwardModal(forwardMessageData);
@@ -5025,9 +5025,9 @@ function openForwardModal(data) {
   
   const previewContent = document.getElementById("forward-msg-content");
   if (previewContent) {
-    let text = data.text || "[File/Hình ảnh]";
+    let text = data.text || "[File/HÃ¬nh áº£nh]";
     if (data.fileUrl) {
-      text = "[Tài liệu] " + (data.fileUrl.split('/').pop() || "File đính kèm");
+      text = "[TÃ i liá»‡u] " + (data.fileUrl.split('/').pop() || "File Ä‘Ã­nh kÃ¨m");
     }
     previewContent.textContent = text;
   }
@@ -5039,7 +5039,7 @@ function openForwardModal(data) {
 function loadForwardTargets() {
   const targetsList = document.getElementById("forward-targets-list");
   if (!targetsList) return;
-  targetsList.innerHTML = '<p class="text-xs text-slate-400 text-center py-8">Đang tải...</p>';
+  targetsList.innerHTML = '<p class="text-xs text-slate-400 text-center py-8">Äang táº£i...</p>';
 
   fetch('/api/rooms', {
     headers: { 'Authorization': 'Bearer ' + localStorage.getItem("alonha_token") }
@@ -5048,7 +5048,7 @@ function loadForwardTargets() {
   .then(function(rooms) {
     const otherRooms = rooms.filter(function(r) { return r.id != activeRoomId; });
     if (otherRooms.length === 0) {
-      targetsList.innerHTML = '<p class="text-xs text-slate-400 text-center py-8">Không có hội thoại nào khác.</p>';
+      targetsList.innerHTML = '<p class="text-xs text-slate-400 text-center py-8">KhÃ´ng cÃ³ há»™i thoáº¡i nÃ o khÃ¡c.</p>';
       return;
     }
     targetsList.innerHTML = "";
@@ -5058,7 +5058,7 @@ function loadForwardTargets() {
       div.className = "flex items-center gap-3 p-2.5 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors border border-transparent hover:border-slate-100 forward-room-item";
       div.dataset.roomId = room.id;
       div.dataset.roomName = room.name;
-      div.innerHTML = '<div class="relative shrink-0"><img src="' + avatar + '" class="w-10 h-10 rounded-full object-cover border border-slate-100"></div><div class="min-w-0 flex-1"><h4 class="font-bold text-slate-800 text-sm truncate">' + room.name + '</h4><p class="text-xs text-slate-400 truncate">' + (room.is_group ? "Nhóm chat" : "Hội thoại cá nhân") + '</p></div><div class="forward-radio shrink-0"><div class="w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center"><div class="w-2.5 h-2.5 rounded-full hidden bg-blue-500"></div></div></div>';
+      div.innerHTML = '<div class="relative shrink-0"><img src="' + avatar + '" class="w-10 h-10 rounded-full object-cover border border-slate-100"></div><div class="min-w-0 flex-1"><h4 class="font-bold text-slate-800 text-sm truncate">' + room.name + '</h4><p class="text-xs text-slate-400 truncate">' + (room.is_group ? "NhÃ³m chat" : "Há»™i thoáº¡i cÃ¡ nhÃ¢n") + '</p></div><div class="forward-radio shrink-0"><div class="w-5 h-5 rounded-full border-2 border-slate-300 flex items-center justify-center"><div class="w-2.5 h-2.5 rounded-full hidden bg-blue-500"></div></div></div>';
       
       div.addEventListener("click", function() {
         document.querySelectorAll(".forward-room-item").forEach(function(item) {
@@ -5079,11 +5079,11 @@ function loadForwardTargets() {
     });
   })
   .catch(function() {
-    targetsList.innerHTML = '<p class="text-xs text-red-500 text-center py-8">Lỗi tải danh sách hội thoại.</p>';
+    targetsList.innerHTML = '<p class="text-xs text-red-500 text-center py-8">Lá»—i táº£i danh sÃ¡ch há»™i thoáº¡i.</p>';
   });
 }
 
-// Tìm kiếm hội thoại
+// TÃ¬m kiáº¿m há»™i thoáº¡i
 document.getElementById("forward-search-input")?.addEventListener("input", function(e) {
   const q = e.target.value.toLowerCase().trim();
   document.querySelectorAll(".forward-room-item").forEach(function(item) {
@@ -5096,29 +5096,29 @@ document.getElementById("forward-search-input")?.addEventListener("input", funct
   });
 });
 
-// Xác nhận chuyển tiếp
+// XÃ¡c nháº­n chuyá»ƒn tiáº¿p
 document.getElementById("btn-confirm-forward")?.addEventListener("click", function() {
   const targetId = this.dataset.targetRoomId;
   const targetName = this.dataset.targetRoomName;
   
   if (!targetId || !forwardMessageData) {
-    alert("Vui lòng chọn hội thoại để chuyển tiếp.");
+    alert("Vui lÃ²ng chá»n há»™i thoáº¡i Ä‘á»ƒ chuyá»ƒn tiáº¿p.");
     return;
   }
-  if (!confirm("Chuyển tiếp tin nhắn đến \"" + targetName + "\"?")) return;
+  if (!confirm("Chuyá»ƒn tiáº¿p tin nháº¯n Ä‘áº¿n \"" + targetName + "\"?")) return;
 
-  // Lấy file_url và dùng getLocalFileUrl để xử lý
+  // Láº¥y file_url vÃ  dÃ¹ng getLocalFileUrl Ä‘á»ƒ xá»­ lÃ½
   let forwardFileUrl = forwardMessageData.fileUrl || "";
   if (forwardFileUrl) {
     forwardFileUrl = getLocalFileUrl(forwardFileUrl);
   }
   
-  let forwardText = forwardMessageData.text || "[File/Hình ảnh]";
+  let forwardText = forwardMessageData.text || "[File/HÃ¬nh áº£nh]";
   let forwardFileType = "";
   let forwardFileName = "";
   
   if (forwardFileUrl) {
-    // Xác định loại file từ local path (phần trước ||)
+    // XÃ¡c Ä‘á»‹nh loáº¡i file tá»« local path (pháº§n trÆ°á»›c ||)
     const rawUrl = forwardMessageData.fileUrl || "";
     let localPath = rawUrl;
     if (rawUrl.indexOf("||") !== -1) {
@@ -5133,20 +5133,20 @@ document.getElementById("btn-confirm-forward")?.addEventListener("click", functi
     
     if (imageExts.indexOf(ext) !== -1) {
       forwardFileType = "media";
-      forwardText = "[Hình ảnh được chuyển tiếp]";
+      forwardText = "[HÃ¬nh áº£nh Ä‘Æ°á»£c chuyá»ƒn tiáº¿p]";
     } else if (audioExts.indexOf(ext) !== -1) {
       forwardFileType = "audio";
-      forwardText = "[Ghi âm được chuyển tiếp]";
+      forwardText = "[Ghi Ã¢m Ä‘Æ°á»£c chuyá»ƒn tiáº¿p]";
     } else {
       forwardFileType = "file";
-      forwardText = "[Tệp] " + forwardFileName;
+      forwardText = "[Tá»‡p] " + forwardFileName;
     }
   }
   
-  // Gửi file_url ở dạng local_path||drive_url để renderSingleMessage xử lý đúng
+  // Gá»­i file_url á»Ÿ dáº¡ng local_path||drive_url Ä‘á»ƒ renderSingleMessage xá»­ lÃ½ Ä‘Ãºng
   let fileUrlToSend = forwardMessageData.fileUrl || "";
-  // Giữ nguyên format local_path||drive_url (getLocalFileUrl sẽ chuyển thành thumbnail)
-  // Nếu chỉ có local_path, thêm || để đánh dấu
+  // Giá»¯ nguyÃªn format local_path||drive_url (getLocalFileUrl sáº½ chuyá»ƒn thÃ nh thumbnail)
+  // Náº¿u chá»‰ cÃ³ local_path, thÃªm || Ä‘á»ƒ Ä‘Ã¡nh dáº¥u
   if (fileUrlToSend && fileUrlToSend.indexOf("||") === -1) {
     fileUrlToSend = fileUrlToSend;
   }
@@ -5154,7 +5154,7 @@ document.getElementById("btn-confirm-forward")?.addEventListener("click", functi
   socket.emit("send_message", {
     room_id: parseInt(targetId),
     sender_id: currentUser.id,
-    message_text: "📨 [Đã chuyển tiếp từ " + currentUser.display_name + "]: " + forwardText,
+    message_text: "ðŸ“¨ [ÄÃ£ chuyá»ƒn tiáº¿p tá»« " + currentUser.display_name + "]: " + forwardText,
     file_url: fileUrlToSend,
     file_type: forwardFileType,
     file_name: forwardFileName,
@@ -5166,12 +5166,12 @@ document.getElementById("btn-confirm-forward")?.addEventListener("click", functi
   // Toast notification
   const toastMsg = document.createElement("div");
   toastMsg.className = "fixed top-4 right-4 bg-emerald-500 text-white px-5 py-3 rounded-xl shadow-xl z-[100] text-xs font-bold animate-bounce select-none";
-  toastMsg.textContent = "✅ Đã chuyển tiếp đến \"" + targetName + "\"!";
+  toastMsg.textContent = "âœ… ÄÃ£ chuyá»ƒn tiáº¿p Ä‘áº¿n \"" + targetName + "\"!";
   document.body.appendChild(toastMsg);
   setTimeout(function() { toastMsg.remove(); }, 2500);
 });
 
-// Đóng modal
+// ÄÃ³ng modal
 document.getElementById("btn-cancel-forward")?.addEventListener("click", closeForwardModal);
 document.getElementById("btn-close-forward")?.addEventListener("click", closeForwardModal);
 document.getElementById("forward-modal")?.addEventListener("click", function(e) {
@@ -5193,3 +5193,4 @@ function closeForwardModal() {
   if (searchInput) searchInput.value = "";
   forwardMessageData = null;
 }
+
