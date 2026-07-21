@@ -36,13 +36,11 @@ jobs:
         run: |
           mkdir -p www
           cp index.html www/
-          cp -r public www/ 2>/dev/null || true
-          cp -r app.js www/ 2>/dev/null || true
-
-      - name: Initialize Capacitor
+          cp app.js www/ 2>/dev/null || true
+          ls -la www/
+      - name: Sync Capacitor
         run: |
-          npx cap init AloNha com.alonha.app --webDir=www
-          npx cap add android
+          npx cap sync android
 
       - name: Build APK
         run: |
@@ -55,3 +53,4 @@ jobs:
         with:
           name: alonha-apk
           path: android/app/build/outputs/apk/debug/*.apk
+
