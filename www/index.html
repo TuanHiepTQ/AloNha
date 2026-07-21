@@ -1,0 +1,1354 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>AloNha - Giao Diện Chat Doanh Nghiệp Chuẩn Zalo</title>
+  
+  <link class="pwa-manifest" rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0068ff">
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AloNha">
+  <link rel="apple-touch-icon" href="https://img.icons8.com/color/192/000000/speech-bubble.png">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            zalo: {
+              primary: '#0068ff',
+              hover: '#005ae0',
+              light: '#eef3ff',
+              gray: '#f1f2f4'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    /* Style cho trạng thái tin nhắn */
+    .status-icon { font-size: 10px; margin-left: 4px; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    body { height: 100vh; height: 100dvh; }
+    @keyframes highlightPulse {
+      0% { background-color: rgba(254, 240, 138, 0.9); }
+      100% { background-color: transparent; }
+    }
+    .highlight-msg { animation: highlightPulse 2.5s ease-out; }
+    .accordion-content { transition: max-height 0.3s ease-out; overflow: hidden; }
+    .switch { position: relative; inline-size: 46px; block-size: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; inset: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: #0068ff; }
+    input:checked + .slider:before { transform: translateX(22px); }
+  </style>
+</head>
+<body class="flex flex-col overflow-hidden select-none bg-slate-50 font-sans">
+
+  <!-- ========================================== -->
+  <!-- 🚪 Giao diện Đăng ký / Đăng nhập (Auth Container) -->
+  <!-- ========================================== -->
+  <div id="auth-container" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-100 p-4">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 border border-slate-100">
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-zalo-primary text-white text-3xl font-bold shadow-lg mb-3">
+          <i class="fa-solid fa-house-chimney"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-slate-800">Chào mừng đến với AloNha</h2>
+        <p class="text-slate-500 mt-1 text-sm">Hệ thống liên lạc & lưu trữ bảo mật 3TB</p>
+      </div>
+
+      <!-- Tab selection -->
+      <div class="flex border-b border-slate-100 mb-6 text-sm font-semibold select-none">
+        <button id="btn-tab-login" class="flex-1 pb-3 text-center border-b-2 border-zalo-primary text-zalo-primary">Đăng Nhập</button>
+        <button id="btn-tab-register" class="flex-1 pb-3 text-center border-b-2 border-transparent text-slate-400 hover:text-slate-600">Đăng Ký</button>
+      </div>
+
+      <!-- Form Đăng nhập -->
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tên tài khoản</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i class="fa-solid fa-user"></i>
+            </span>
+            <input type="text" id="login-username" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-zalo-primary text-sm" placeholder="Nhập tên đăng nhập...">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Mật khẩu</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input type="password" id="login-password" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-zalo-primary text-sm" placeholder="Nhập mật khẩu...">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-zalo-primary hover:bg-zalo-hover text-white font-semibold py-3 rounded-xl shadow-lg transition-colors text-sm mt-4">Đăng Nhập</button>
+      </form>
+
+      <!-- Form Đăng ký -->
+      <form id="register-form" class="hidden space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tên tài khoản</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i class="fa-solid fa-user-plus"></i>
+            </span>
+            <input type="text" id="reg-username" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-zalo-primary text-sm" placeholder="Tên đăng nhập viết liền không dấu...">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tên hiển thị</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i class="fa-solid fa-id-card"></i>
+            </span>
+            <input type="text" id="reg-display-name" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-zalo-primary text-sm" placeholder="Ví dụ: Phạm Tuấn Hiệp...">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Mật khẩu</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+              <i class="fa-solid fa-lock"></i>
+            </span>
+            <input type="password" id="reg-password" required class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-zalo-primary text-sm" placeholder="Nhập mật khẩu an toàn...">
+          </div>
+        </div>
+        <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 rounded-xl shadow-lg transition-colors text-sm mt-4">Đăng Ký Tài Khoản</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 💻 Giao diện Chính 3 cột chuẩn Zalo (Main App) -->
+  <!-- ========================================== -->
+  <div id="main-app" class="hidden flex flex-1 overflow-hidden relative">
+
+    <!-- 🌐 CỘT 1: THANH ĐIỀU HƯỚNG TRÁI / DƯỚI CÙNG DI ĐỘNG -->
+    <div id="navigation-sidebar" class="fixed bottom-0 inset-x-0 h-16 bg-slate-900 text-slate-400 flex md:relative md:inset-y-0 md:w-16 md:h-full md:flex-col items-center justify-around md:justify-start md:py-6 md:space-y-6 z-30 border-t border-slate-800 md:border-t-0 shadow-lg select-none">
+      
+      <!-- Avatar Người Dùng & Dropdown Menu -->
+      <div class="relative group select-none flex items-center justify-center p-2">
+        <img id="user-my-avatar" src="/logo.png" class="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-slate-700 cursor-pointer object-cover hover:border-zalo-primary transition-colors" alt="My Profile">
+        <span class="absolute bottom-1 right-1 w-2.5 h-2.5 md:w-3 md:h-3 bg-green-500 border-2 border-slate-900 rounded-full"></span>
+        
+        <!-- Dropdown Menu Tài Khoản Chuẩn Zalo -->
+        <div id="account-dropdown-menu" class="absolute bottom-14 left-0 md:left-14 md:bottom-0 w-64 bg-white rounded-lg shadow-[0_0_15px_rgba(0,0,0,0.1)] py-2 hidden border border-slate-200 z-50 text-slate-800">
+          <div class="px-4 py-3 border-b border-slate-100">
+            <p class="font-bold text-base text-slate-800" id="profile-display-name-menu">Tên hiển thị</p>
+          </div>
+          <button class="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 flex items-center justify-between text-slate-700 transition-colors">
+            Nâng cấp tài khoản <i class="fa-solid fa-arrow-up-right-from-square text-slate-400"></i>
+          </button>
+          <button id="btn-show-profile-zalo" class="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 text-slate-700 transition-colors">Hồ sơ của bạn</button>
+          <button id="btn-show-settings-zalo" class="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 text-slate-700 transition-colors">Cài đặt</button>
+          <button id="btn-open-admin-panel" class="hidden w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 text-amber-700 transition-colors">🛠️ Quản trị hệ thống</button>
+          <hr class="my-1 border-slate-100">
+          <button id="btn-logout-sidebar-zalo" class="w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 text-slate-700 transition-colors">Đăng xuất</button>
+        </div>
+      </div>
+
+      <!-- Tab Chat -->
+      <button id="tab-btn-chat" class="flex flex-col md:flex-row items-center justify-center p-3 rounded-xl transition-all text-white bg-slate-800 md:w-12 md:h-12 relative" title="Tin nhắn">
+        <i class="fa-solid fa-comment text-xl"></i>
+        <span id="global-unread-badge" class="hidden absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-slate-900">0</span>
+      </button>
+
+      <!-- Tab Danh Bạ (Bạn bè & Quản lý kết bạn Zalo style) -->
+      <button id="tab-btn-contacts" class="flex flex-col md:flex-row items-center justify-center p-3 rounded-xl transition-all text-slate-400 hover:bg-slate-800 md:w-12 md:h-12 relative" title="Danh bạ">
+        <i class="fa-regular fa-address-book text-xl"></i>
+        <span id="contacts-unread-badge" class="hidden absolute top-1 right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-slate-900">0</span>
+      </button>
+
+      <!-- Tab Cloud Cá Nhân (My Docs 3TB) -->
+      <button id="tab-btn-cloud" class="flex flex-col md:flex-row items-center justify-center p-3 rounded-xl transition-all hover:bg-slate-800 md:w-12 md:h-12 text-slate-400" title="Cloud của tôi">
+        <i class="fa-solid fa-cloud text-xl"></i>
+      </button>
+
+      <!-- Nút Khóa Màn Kinh Di Động -->
+      <button id="tab-btn-lock-mobile" class="md:hidden flex flex-col items-center justify-center p-3 rounded-xl text-slate-400">
+        <i class="fa-solid fa-lock text-xl"></i>
+      </button>
+
+      <!-- Tab Cài Đặt (Dành cho di động) -->
+      <button id="tab-btn-settings" class="md:hidden flex flex-col items-center justify-center p-3 rounded-xl text-slate-400">
+        <i class="fa-solid fa-gear text-xl"></i>
+      </button>
+
+      <!-- Nút Đăng xuất (Chỉ hiển thị trên máy tính) -->
+      <button id="btn-logout" class="hidden md:flex items-center justify-center w-12 h-12 rounded-xl text-red-400 hover:bg-red-950/40 hover:text-red-300 transition-all mt-auto" title="Đăng xuất">
+        <i class="fa-solid fa-power-off text-xl"></i>
+      </button>
+    </div>
+
+    <!-- 📂 CỘT 2a: DANH SÁCH PHÒNG CHAT (Sidebar Chat) -->
+    <div id="rooms-sidebar" class="w-full md:w-80 border-r border-slate-200 bg-white flex flex-col h-full z-20 shrink-0">
+      <!-- Ô Tìm kiếm & Tạo nhóm -->
+      <div class="p-4 flex gap-2 items-center border-b border-slate-100">
+        <div class="relative flex-1">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+            <i class="fa-solid fa-magnifying-glass text-sm"></i>
+          </span>
+          <input type="text" id="search-rooms" class="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-100 focus:outline-none focus:ring-1 focus:ring-zalo-primary text-xs" placeholder="Tìm kiếm hội thoại, thành viên...">
+        </div>
+        <button id="btn-open-create-group" class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 hover:text-zalo-primary transition-colors" title="Tạo nhóm chat mới">
+          <i class="fa-solid fa-user-group text-base"></i>
+        </button>
+      </div>
+
+      <!-- Tab Lọc tin nhắn: Tất cả / Chưa đọc -->
+      <div class="flex border-b border-slate-100 text-xs font-semibold text-slate-500 select-none">
+        <button id="filter-all" class="flex-1 py-3 text-center border-b-2 border-zalo-primary text-zalo-primary">Tất cả</button>
+        <button id="filter-unread" class="flex-1 py-3 text-center border-b-2 border-transparent hover:text-slate-800">Chưa đọc</button>
+      </div>
+
+      <!-- Danh sách phòng chat cuộn -->
+      <div id="rooms-list-container" class="flex-1 overflow-y-auto no-scrollbar divide-y divide-slate-100 pb-16 md:pb-0">
+        <!-- Chèn danh sách phòng động bằng JS -->
+      </div>
+    </div>
+
+    <!-- 📂 CỘT 2b: DANH SÁCH DANH BẠ (Sidebar Contacts - Zalo Style) -->
+    <div id="contacts-sidebar" class="hidden w-full md:w-80 border-r border-slate-200 bg-white flex flex-col h-full z-20 shrink-0">
+      <!-- Thêm & Quản lý danh bạ -->
+      <div class="p-4 flex gap-2 items-center border-b border-slate-100 select-none justify-between">
+        <h4 class="font-bold text-slate-800 text-sm">Danh bạ</h4>
+        <button id="btn-open-add-friend" class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 hover:text-zalo-primary transition-colors" title="Thêm bạn mới">
+          <i class="fa-solid fa-user-plus text-base"></i>
+        </button>
+      </div>
+
+      <!-- Menu quản lý danh bạ Zalo -->
+      <div class="flex-1 overflow-y-auto no-scrollbar select-none pb-16 md:pb-0">
+        <button id="contacts-menu-friends" class="w-full flex items-center gap-3 px-4 py-3.5 bg-blue-50 text-zalo-primary font-bold text-xs text-left">
+          <i class="fa-solid fa-user-group text-sm"></i> Danh sách bạn bè
+        </button>
+        <button id="contacts-menu-groups" class="w-full flex items-center gap-3 px-4 py-3.5 text-slate-600 hover:bg-slate-50 text-xs text-left border-t border-slate-50">
+          <i class="fa-solid fa-users text-sm"></i> Danh sách nhóm và cộng đồng
+        </button>
+        <button id="contacts-menu-requests" class="w-full flex items-center justify-between px-4 py-3.5 text-slate-600 hover:bg-slate-50 text-xs text-left border-t border-slate-50 relative">
+          <span class="flex items-center gap-3">
+            <i class="fa-solid fa-envelope-open-text text-sm"></i> Lời mời kết bạn
+          </span>
+          <span id="requests-badge-count" class="hidden bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+        </button>
+        <button id="contacts-menu-invites" class="w-full flex items-center gap-3 px-4 py-3.5 text-slate-600 hover:bg-slate-50 text-xs text-left border-t border-slate-50">
+          <i class="fa-solid fa-people-group text-sm"></i> Lời mời vào nhóm
+        </button>
+      </div>
+    </div>
+
+    <!-- 💬 CỘT 3a: KHUNG CHAT CHI TIẾT -->
+    <div id="chat-area-container" class="hidden md:flex flex-1 flex-col h-full bg-[#f4f5f7] relative">
+      
+      <!-- Header Phòng Chat -->
+      <div class="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-4 z-10 shadow-sm shrink-0">
+        <div class="flex items-center gap-3 min-w-0">
+          <button id="btn-back-to-rooms" class="w-8 h-8 flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-full">
+            <i class="fa-solid fa-arrow-left text-lg"></i>
+          </button>
+          <div class="relative">
+            <img id="chat-header-avatar" src="/logo.png" class="w-10 h-10 rounded-full object-cover border border-slate-100" alt="Room Avatar">
+            <span id="chat-header-status-dot" class="hidden absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+          </div>
+          <div class="min-w-0">
+            <h4 id="chat-header-name" class="font-bold text-slate-800 text-sm truncate max-w-[150px] sm:max-w-[200px] md:max-w-xs">Phòng Chat</h4>
+            <p id="chat-header-status" class="text-xs text-slate-400 truncate">Ngoại tuyến</p>
+          </div>
+        </div>
+
+        <!-- Gọi thoại, Gọi video, Thư mục sidebar -->
+        <div class="flex items-center gap-1 select-none">
+          <button id="btn-voice-call" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-600 transition-colors" title="Cuộc gọi thoại WebRTC">
+            <i class="fa-solid fa-phone text-base"></i>
+          </button>
+          <button id="btn-video-call" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-600 transition-colors" title="Cuộc gọi Video HD">
+            <i class="fa-solid fa-video text-base"></i>
+          </button>
+          <button id="btn-toggle-info" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-600 transition-colors" title="Thông tin hội thoại">
+            <i class="fa-solid fa-circle-info text-base"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Thanh Ghim Tin Nhắn -->
+      <div id="pinned-messages-banner" class="hidden bg-amber-50 border-b border-amber-100 px-4 py-2 flex items-center justify-between gap-3 text-xs text-amber-800 z-10 shadow-inner">
+        <div class="flex items-center gap-2 cursor-pointer flex-1 min-w-0" id="btn-view-all-pins">
+          <i class="fa-solid fa-thumbtack text-amber-600 shrink-0 transform rotate-45"></i>
+          <span class="font-bold shrink-0">Tin ghim (<span id="pin-banner-index">0/0</span>):</span>
+          <span id="pinned-msg-preview" class="truncate flex-1 font-medium">Nội dung tin nhắn được ghim ở đây...</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-pin-prev" class="w-5 h-5 flex items-center justify-center rounded hover:bg-amber-200/50 text-amber-700" title="Tin ghim trước"><i class="fa-solid fa-chevron-left text-[10px]"></i></button>
+          <button id="btn-pin-next" class="w-5 h-5 flex items-center justify-center rounded hover:bg-amber-200/50 text-amber-700" title="Tin ghim sau"><i class="fa-solid fa-chevron-right text-[10px]"></i></button>
+          <span id="pinned-count-badge" class="hidden bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded text-[10px]">1</span>
+          <button id="btn-unpin-current" class="w-5 h-5 flex items-center justify-center rounded-full hover:bg-amber-200/50 text-amber-600" title="Bỏ ghim tin này">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Lịch sử Chat -->
+      <div id="chat-messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+        <!-- Tin nhắn động đổ vào đây -->
+      </div>
+
+      <!-- Typing Indicator -->
+      <div id="typing-indicator" class="hidden px-4 py-1 text-xs text-slate-400 italic flex items-center gap-1.5 shrink-0">
+        <span id="typing-username" class="font-semibold">Ai đó</span> đang nhập tin nhắn
+        <span class="flex gap-0.5"><span class="w-1 h-1 bg-slate-400 rounded-full animate-bounce"></span><span class="w-1 h-1 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]"></span><span class="w-1 h-1 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]"></span></span>
+      </div>
+
+      <!-- Soạn thảo & Gửi file -->
+      <div class="border-t border-slate-200 bg-white p-3 shrink-0 relative">
+        <!-- Giao diện Đang Thu Âm (Mặc định ẩn) -->
+        <div id="recording-ui" class="hidden absolute inset-0 bg-white z-10 flex items-center justify-between px-4">
+          <div class="flex items-center gap-2 text-red-500 animate-pulse">
+            <i class="fa-solid fa-circle text-[10px]"></i>
+            <span id="recording-time" class="font-bold text-sm">00:00</span>
+          </div>
+          <div class="text-xs text-slate-500 font-semibold italic">Đang ghi âm...</div>
+          <div class="flex gap-2">
+            <button type="button" id="btn-cancel-record" class="w-10 h-10 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+            <button type="button" id="btn-send-record" class="w-10 h-10 rounded-full bg-zalo-primary text-white hover:bg-zalo-hover flex items-center justify-center shadow-md transition-colors">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex gap-4 mb-2 px-1 text-slate-500">
+          <label class="cursor-pointer hover:text-zalo-primary transition-colors" title="Gửi hình ảnh">
+            <i class="fa-regular fa-image text-xl"></i>
+            <input type="file" id="tool-send-image" accept="image/*" class="hidden">
+          </label>
+          <label class="cursor-pointer hover:text-zalo-primary transition-colors" title="Gửi tệp tài liệu tối đa 1GB">
+            <i class="fa-solid fa-paperclip text-xl"></i>
+            <input type="file" id="tool-send-file" class="hidden">
+          </label>
+          <button type="button" id="btn-start-record" class="hover:text-red-500 transition-colors" title="Gửi tin nhắn thoại">
+            <i class="fa-solid fa-microphone text-xl"></i>
+          </button>
+          <button type="button" id="btn-share-location" class="hover:text-emerald-500 transition-colors" title="Chia sẻ vị trí">
+            <i class="fa-solid fa-location-dot text-xl"></i>
+          </button>
+          <button id="btn-timer-self-destruct" class="hover:text-amber-500 transition-colors" title="Tin nhắn tự hủy"><i class="fa-regular fa-clock text-xl"></i></button>
+        </div>
+        
+        <form id="chat-input-form" class="flex items-center gap-2">
+          <input type="text" id="chat-input-field" class="flex-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-zalo-primary" placeholder="Nhập tin nhắn..." autocomplete="off">
+          <button type="submit" class="bg-zalo-primary hover:bg-zalo-hover text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-md transition-colors shrink-0">
+            <i class="fa-solid fa-paper-plane text-sm"></i>
+          </button>
+        </form>
+      </div>
+
+    </div> 
+    <!-- ⚠️ LƯU Ý: Phải có thẻ </div> này để đóng khung chat-area-container -->
+
+    <!-- 💬 CỘT 3b: CHI TIẾT DANH BẠ (Main Contact Panel - Zalo Standard View) -->
+
+    <!-- 💬 CỘT 3b: CHI TIẾT DANH BẠ (Main Contact Panel - Zalo Standard View) -->
+    <div id="contacts-main-panel" class="hidden flex-1 flex-col h-full bg-[#f4f5f7] relative">
+      <!-- Header -->
+      <div class="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6 z-10 shadow-sm shrink-0 select-none">
+        <div class="flex items-center gap-3 min-w-0">
+          <button id="btn-contacts-back-to-sidebar" class="w-8 h-8 md:hidden flex items-center justify-center text-slate-600 hover:bg-slate-100 rounded-full">
+            <i class="fa-solid fa-arrow-left text-lg"></i>
+          </button>
+          <i class="fa-regular fa-address-book text-zalo-primary text-lg shrink-0"></i>
+          <h4 id="contacts-panel-title" class="font-bold text-slate-800 text-sm">Danh sách bạn bè</h4>
+        </div>
+      </div>
+
+      <!-- Panel Body -->
+      <div id="contacts-panel-body" class="flex-1 overflow-y-auto p-4 md:p-6 no-scrollbar bg-white">
+        <!-- Javascript kết bạn/danh sách đổ vào đây -->
+      </div>
+    </div>
+
+    <!-- 📊 CỘT 4: THÔNG TIN HỘI THOẠI & QUẢN LÝ NHÓM -->
+    <div id="info-sidebar" class="hidden w-80 border-l border-slate-200 bg-white flex flex-col h-full z-10 shrink-0">
+      
+      <!-- VIEW 4.1: THÔNG TIN HỘI THOẠI -->
+      <div id="sidebar-info-view" class="flex flex-col h-full">
+        <!-- Header -->
+        <div class="h-16 border-b border-slate-200 flex items-center justify-between px-4 shrink-0">
+          <h4 class="font-bold text-slate-800 text-sm">Thông tin hội thoại</h4>
+          <button id="btn-close-info" class="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-500">
+            <i class="fa-solid fa-xmark text-base"></i>
+          </button>
+        </div>
+        
+        <!-- Scrollable Body -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-5 no-scrollbar">
+          
+          <!-- Avatar & Name Area -->
+          <div class="flex flex-col items-center text-center space-y-2 pb-4 border-b border-slate-100">
+            <div class="relative group select-none">
+              <img id="info-avatar" src="/logo.png" class="w-20 h-20 rounded-full object-cover border border-slate-200 shadow-sm" alt="Room Avatar">
+              <button id="btn-edit-group-profile" class="hidden group-hover:flex absolute inset-0 bg-black/40 rounded-full items-center justify-center text-white text-xs transition-colors" title="Thay đổi ảnh đại diện">
+                <i class="fa-solid fa-camera text-base"></i>
+              </button>
+              <input type="file" id="input-group-avatar-file" accept="image/*" class="hidden">
+            </div>
+            
+            <div class="flex items-center gap-1.5">
+              <span id="info-name" class="font-bold text-slate-800 text-base">Tên hội thoại</span>
+              <button id="btn-trigger-rename" class="text-slate-400 hover:text-slate-600" title="Chỉnh sửa tên">
+                <i class="fa-solid fa-pencil text-xs"></i>
+              </button>
+            </div>
+            
+            <!-- Inline Rename Input Box -->
+            <div id="group-rename-container" class="hidden w-full flex gap-1 items-center">
+              <input type="text" id="group-rename-input" class="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-zalo-primary" placeholder="Tên nhóm mới...">
+              <button id="btn-save-group-rename" class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-2.5 py-1.5 rounded-lg"><i class="fa-solid fa-check"></i></button>
+              <button id="btn-cancel-group-rename" class="bg-slate-100 hover:bg-slate-200 text-slate-500 text-xs px-2.5 py-1.5 rounded-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+          </div>
+
+          <!-- Quick Action Buttons -->
+          <div class="grid grid-cols-4 gap-1 text-center py-2 select-none">
+            <button id="btn-info-mute" class="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-slate-50 transition-all text-slate-600">
+              <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm"><i class="fa-solid fa-bell"></i></div>
+              <span class="text-[10px] font-semibold">Tắt báo</span>
+            </button>
+            
+            <button id="btn-info-pin-room" class="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-slate-50 transition-all text-slate-600">
+              <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm"><i class="fa-solid fa-thumbtack"></i></div>
+              <span class="text-[10px] font-semibold">Ghim</span>
+            </button>
+            
+            <button id="btn-info-add-member" class="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-slate-50 transition-all text-slate-600">
+              <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm"><i class="fa-solid fa-user-plus"></i></div>
+              <span class="text-[10px] font-semibold">Thêm TV</span>
+            </button>
+            
+            <button id="btn-info-manage-group" class="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-slate-50 transition-all text-slate-600">
+              <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-sm"><i class="fa-solid fa-gear"></i></div>
+              <span class="text-[10px] font-semibold">Quản lý</span>
+            </button>
+          </div>
+
+          <!-- Section: Thành viên nhóm (Accordion - Only for Group) -->
+          <div id="section-members-accordion" class="border-t border-slate-100 pt-3">
+            <button id="btn-toggle-members-accordion" class="w-full flex justify-between items-center text-slate-700 font-bold text-xs uppercase tracking-wider mb-2 focus:outline-none">
+              <span>Thành viên nhóm (<span id="members-count-indicator">0</span>)</span>
+              <i class="fa-solid fa-chevron-down transition-transform duration-200"></i>
+            </button>
+            
+            <div id="members-accordion-content" class="accordion-content space-y-3">
+              <!-- Join Link Box -->
+              <div class="bg-blue-50 border border-blue-100 rounded-xl p-2.5 space-y-2">
+                <p class="text-[10px] font-bold text-blue-700"><i class="fa-solid fa-link mr-1"></i> Link tham gia nhóm</p>
+                <div class="flex gap-1.5 items-center">
+                  <input type="text" id="group-link-textbox" readonly class="flex-1 bg-white text-slate-600 border border-slate-200 text-xs rounded-lg px-2 py-1 focus:outline-none select-all" value="">
+                  <button id="btn-copy-group-link" class="p-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg" title="Sao chép"><i class="fa-solid fa-copy text-xs"></i></button>
+                  <button id="btn-share-group-link" class="p-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg" title="Chia sẻ vào chat"><i class="fa-solid fa-share text-xs"></i></button>
+                </div>
+              </div>
+              
+              <!-- Scrollable member list -->
+              <div id="group-members-list" class="space-y-2.5 max-h-48 overflow-y-auto no-scrollbar">
+                <!-- Chèn động TV -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Bảng tin nhóm -->
+          <div id="section-notes-accordion" class="border-t border-slate-100 pt-3">
+            <button id="btn-toggle-notes-accordion" class="w-full flex justify-between items-center text-slate-700 font-bold text-xs uppercase tracking-wider mb-2 focus:outline-none">
+              <span>Bảng tin nhóm</span>
+              <i class="fa-solid fa-chevron-down transition-transform duration-200"></i>
+            </button>
+            <div id="notes-accordion-content" class="accordion-content space-y-2.5 text-xs text-slate-600">
+              <div class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-not-allowed">
+                <i class="fa-solid fa-clock text-blue-500 text-sm shrink-0"></i>
+                <span class="font-medium">Danh sách nhắc hẹn</span>
+              </div>
+              <div class="flex items-center gap-2 p-2 hover:bg-slate-50 rounded-lg cursor-not-allowed">
+                <i class="fa-solid fa-square-poll-horizontal text-emerald-500 text-sm shrink-0"></i>
+                <span class="font-medium">Ghi chú, ghim, bình chọn</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Media Grid -->
+          <div class="border-t border-slate-100 pt-3">
+            <button id="btn-toggle-media-accordion" class="w-full flex justify-between items-center text-slate-700 font-bold text-xs uppercase tracking-wider mb-2 focus:outline-none">
+              <span>Ảnh & Video đã gửi</span>
+              <i class="fa-solid fa-chevron-down transition-transform duration-200"></i>
+            </button>
+            <div id="media-accordion-content" class="accordion-content space-y-2">
+              <div id="media-grid" class="grid grid-cols-3 gap-1">
+                <!-- Đổ ảnh động -->
+              </div>
+              <p id="no-media-text" class="text-[10px] text-slate-400 italic py-1">Không có hình ảnh nào được gửi</p>
+            </div>
+          </div>
+
+          <!-- Section: Files list -->
+          <div class="border-t border-slate-100 pt-3">
+            <button id="btn-toggle-files-accordion" class="w-full flex justify-between items-center text-slate-700 font-bold text-xs uppercase tracking-wider mb-2 focus:outline-none">
+              <span>Tài liệu đã gửi</span>
+              <i class="fa-solid fa-chevron-down transition-transform duration-200"></i>
+            </button>
+            <div id="files-accordion-content" class="accordion-content space-y-2">
+              <div id="file-list" class="space-y-1.5">
+                <!-- Đổ file động -->
+              </div>
+              <p id="no-files-text" class="text-[10px] text-slate-400 italic py-1">Không có tài liệu nào được gửi</p>
+            </div>
+          </div>
+
+          <!-- Section: Links list -->
+          <div class="border-t border-slate-100 pt-3">
+            <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Đường dẫn đã chia sẻ</h5>
+            <div id="link-list" class="space-y-1 text-xs text-slate-600 truncate">
+              <!-- Đổ link động -->
+            </div>
+            <p id="no-links-text" class="text-[10px] text-slate-400 italic py-1">Không có liên kết nào được gửi</p>
+          </div>
+
+          <!-- Quản lý Dung lượng Cloud Cá Nhân -->
+          <div id="cloud-storage-card" class="hidden p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2 select-none">
+            <h5 class="text-xs font-bold text-slate-700">Bộ nhớ Private Cloud 3TB</h5>
+            <div class="w-full bg-slate-200 rounded-full h-2">
+              <div id="cloud-usage-bar" class="bg-blue-600 h-2 rounded-full" style="width: 1%"></div>
+            </div>
+            <p id="cloud-usage-text" class="text-[10px] text-slate-500 font-medium">Đang tải dung lượng...</p>
+          </div>
+          
+        </div>
+      </div>
+
+      <!-- VIEW 4.2: QUẢN LÝ NHÓM -->
+      <div id="sidebar-manage-view" class="hidden flex flex-col h-full bg-slate-50">
+        <!-- Header -->
+        <div class="h-16 border-b border-slate-200 bg-white flex items-center gap-2 px-4 shrink-0 select-none">
+          <button id="btn-back-to-info" class="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-500">
+            <i class="fa-solid fa-chevron-left text-base"></i>
+          </button>
+          <h4 class="font-bold text-slate-800 text-sm">Quản lý nhóm</h4>
+        </div>
+
+        <!-- Settings List Scroll -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-5 no-scrollbar text-sm text-slate-700">
+          
+          <!-- BANNER KHÓA BẢO MẬT -->
+          <div id="manage-group-locked-banner" class="hidden bg-amber-50 border border-amber-200 p-3.5 rounded-2xl text-amber-800 text-xs flex items-start gap-2.5 select-none mb-2 shadow-sm border-l-4 border-l-amber-500">
+            <i class="fa-solid fa-lock text-sm text-amber-600 shrink-0 mt-0.5"></i>
+            <div>
+              <p class="font-bold">Chế độ xem cài đặt</p>
+              <p class="text-[10px] text-amber-700 mt-0.5 leading-relaxed">Bạn đang xem cấu hình nhóm với tư cách thành viên. Chỉ duy nhất <strong>Trưởng nhóm (Chủ sở hữu)</strong> mới có quyền thay đổi các thiết lập này.</p>
+            </div>
+          </div>
+
+          <!-- Section Allow actions -->
+          <div class="space-y-3.5 bg-white border border-slate-200/60 p-4 rounded-2xl shadow-sm">
+            <h5 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-2">Cho phép các thành viên:</h5>
+            
+            <div class="flex justify-between items-center gap-3">
+              <span class="font-medium text-xs text-slate-700">Thay đổi tên & ảnh đại diện</span>
+              <label class="switch shrink-0">
+                <input type="checkbox" id="opt-allow-edit-profile" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <div class="flex justify-between items-center gap-3">
+              <span class="font-medium text-xs text-slate-700">Ghim tin nhắn, ghim hội thoại</span>
+              <label class="switch shrink-0">
+                <input type="checkbox" id="opt-allow-pin" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <div class="flex justify-between items-center gap-3">
+              <span class="font-medium text-xs text-slate-700">Tạo mới ghi chú, nhắc hẹn</span>
+              <label class="switch shrink-0">
+                <input type="checkbox" id="opt-allow-note" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <div class="flex justify-between items-center gap-3">
+              <span class="font-medium text-xs text-slate-700">Tạo mới bình chọn</span>
+              <label class="switch shrink-0">
+                <input type="checkbox" id="opt-allow-poll" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <div class="flex justify-between items-center gap-3">
+              <span class="font-medium text-xs text-slate-700">Gửi tin nhắn trong nhóm</span>
+              <label class="switch shrink-0">
+                <input type="checkbox" id="opt-allow-send-message" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Section System flow -->
+          <div class="space-y-3.5 bg-white border border-slate-200/60 p-4 rounded-2xl shadow-sm">
+            <h5 class="font-bold text-xs text-slate-500 uppercase tracking-wider mb-2">Cấu hình hội thoại</h5>
+            
+            <div class="flex justify-between items-center gap-3">
+              <div class="flex items-center gap-1.5">
+                <span class="font-medium text-xs text-slate-700">Phê duyệt thành viên mới</span>
+                <i class="fa-regular fa-question-circle text-slate-400 cursor-help" title="Khi bật, thành viên mới cần được Trưởng/Phó nhóm chấp nhận."></i>
+              </div>
+              <label class="switch shrink-0">
+                <input type="checkbox" id="opt-approval-mode">
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="flex justify-between items-center gap-3">
+              <div class="flex items-center gap-1.5">
+                <span class="font-medium text-xs text-slate-700">Kiểm duyệt nội dung</span>
+                <i class="fa-regular fa-question-circle text-slate-400 cursor-help" title="Khi bật, tin nhắn của thành viên cần được Trưởng/Phó nhóm phê duyệt mới hiển thị trong nhóm."></i>
+              </div>
+              <label class="switch shrink-0">
+                <input type="checkbox" id="opt-moderation-mode">
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <div class="flex justify-between items-center gap-3">
+              <div class="flex items-center gap-1.5">
+                <span class="font-medium text-xs text-slate-700">Đánh dấu tin Trưởng/Phó nhóm</span>
+                <i class="fa-regular fa-question-circle text-slate-400 cursor-help" title="Tin nhắn từ ban quản trị sẽ hiển thị nhãn Trưởng nhóm/Phó nhóm kế bên."></i>
+              </div>
+              <label class="switch shrink-0">
+                <input type="checkbox" id="opt-mark-admin-messages" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <div class="flex justify-between items-center gap-3">
+              <div class="flex items-center gap-1.5">
+                <span class="font-medium text-xs text-slate-700">TV mới đọc tin nhắn gần nhất</span>
+                <i class="fa-regular fa-question-circle text-slate-400 cursor-help" title="Cho phép thành viên mới đọc tối đa 100 tin nhắn cũ trước khi gia nhập."></i>
+              </div>
+              <label class="switch shrink-0">
+                <input type="checkbox" id="opt-allow-new-members-read-recent" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            
+            <div class="flex justify-between items-center gap-3">
+              <div class="flex items-center gap-1.5">
+                <span class="font-medium text-xs text-slate-700">Cho phép dùng link vào nhóm</span>
+                <i class="fa-regular fa-question-circle text-slate-400 cursor-help" title="Bật/Tắt tính năng cho phép người ngoài quét mã/click link để vào nhóm."></i>
+              </div>
+              <label class="switch shrink-0">
+                <input type="checkbox" id="opt-allow-join-via-link" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <!-- Join Link Beneath option -->
+            <div id="manage-link-container" class="bg-slate-50 border border-slate-100 rounded-xl p-2.5 space-y-2 mt-2">
+              <div class="flex gap-1.5 items-center">
+                <input type="text" id="manage-group-link-textbox" readonly class="flex-1 bg-white text-slate-600 border border-slate-200 text-[10px] rounded-lg px-2 py-1.5 focus:outline-none select-all" value="">
+                <button id="btn-manage-copy-group-link" class="p-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg" title="Sao chép"><i class="fa-solid fa-copy text-xs"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Danger Area -->
+          <div class="bg-red-50 border border-red-100 p-4 rounded-2xl space-y-3 shadow-inner">
+            <h5 class="font-bold text-xs text-red-700 uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> Vùng nguy hiểm</h5>
+            
+            <button id="btn-group-leave" class="w-full bg-white hover:bg-orange-50 border border-orange-200 text-orange-600 font-semibold py-2.5 rounded-xl text-xs transition-colors shadow-sm">
+              <i class="fa-solid fa-right-from-bracket mr-1"></i> Rời nhóm hội thoại
+            </button>
+            
+            <button id="btn-group-dissolve" class="hidden w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-xl text-xs transition-colors shadow-md">
+              <i class="fa-solid fa-trash-can mr-1"></i> Giải tán nhóm vĩnh viễn
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- WELCOME BANNER -->
+    <div id="welcome-banner" class="flex flex-1 flex-col items-center justify-center p-8 text-center bg-slate-50 h-full">
+      <div class="w-24 h-24 rounded-3xl bg-zalo-light text-zalo-primary flex items-center justify-center text-4xl shadow-md mb-6 animate-pulse">
+        <i class="fa-solid fa-house-chimney"></i>
+      </div>
+      <h3 class="text-xl font-bold text-slate-800">Chào mừng đến với ứng dụng AloNha!</h3>
+      <p class="text-slate-500 text-sm mt-2 max-w-sm">Chọn một hội thoại hoặc khởi tạo phòng chat với các đồng nghiệp để bắt đầu kết nối bảo mật.</p>
+      
+      <div class="mt-8 w-full max-w-md bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider text-left mb-3 px-1"><i class="fa-solid fa-address-book"></i> Thành viên hệ thống</h4>
+        <div id="welcome-member-list" class="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
+          <!-- Đổ danh sách người dùng để click nhắn ngay -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 🛠️ CÁC MODALS & POPUPS TRỢ GIÚP -->
+  <!-- ========================================== -->
+
+  <!-- MODAL: ADMIN PANEL -->
+  <div id="admin-panel-modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-[70]">
+    <div class="w-full max-w-6xl max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl flex flex-col">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
+        <div>
+          <h3 class="font-bold text-slate-800 text-lg">Admin Panel & Phân quyền Hệ thống</h3>
+          <p class="text-sm text-slate-500">Quản lý người dùng, phòng nhóm và cài đặt hệ thống</p>
+        </div>
+        <button id="btn-close-admin-panel" class="w-9 h-9 rounded-full hover:bg-slate-200 text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-5 overflow-y-auto bg-slate-50">
+        <div id="admin-overview" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5"></div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+          <div class="bg-white rounded-2xl border border-slate-200 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-bold text-slate-800">Người dùng</h4>
+              <span class="text-xs text-slate-500">Quản lý vai trò & trạng thái</span>
+            </div>
+            <div id="admin-users-list" class="space-y-2 max-h-[300px] overflow-y-auto"></div>
+          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 p-4">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-bold text-slate-800">Nhóm / Phòng</h4>
+              <span class="text-xs text-slate-500">Archive hoặc mở lại phòng</span>
+            </div>
+            <div id="admin-rooms-list" class="space-y-2 max-h-[300px] overflow-y-auto"></div>
+          </div>
+        </div>
+        <div class="mt-5 bg-white rounded-2xl border border-slate-200 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-slate-800">Cài đặt hệ thống</h4>
+            <span class="text-xs text-slate-500">Bảo trì, đăng ký và giới hạn người dùng</span>
+          </div>
+          <div id="admin-settings-form" class="space-y-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: XEM NỘI DUNG CHAT CỦA PHÒNG (SUPER ADMIN) -->
+  <div id="admin-room-chat-modal" class="hidden fixed inset-0 bg-slate-900/60 flex items-center justify-center p-4 z-[75]">
+    <div class="w-full max-w-4xl max-h-[85vh] overflow-hidden bg-white rounded-2xl shadow-2xl flex flex-col">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-slate-50">
+        <div>
+          <h3 class="font-bold text-slate-800 text-lg">Nội dung chat phòng</h3>
+          <p id="admin-room-chat-title" class="text-sm text-slate-500">Đang tải...</p>
+        </div>
+        <button id="btn-close-admin-room-chat" class="w-9 h-9 rounded-full hover:bg-slate-200 text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-4 overflow-y-auto bg-slate-50">
+        <div id="admin-room-chat-messages" class="space-y-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: XEM THÔNG TIN TÀI KHOẢN (ZALO STYLE) -->
+  <div id="zalo-profile-view-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-[60]">
+    <div class="w-full max-w-[360px] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+        <h4 class="font-bold text-slate-800 text-[15px]">Thông tin tài khoản</h4>
+        <button id="btn-close-zalo-profile" class="text-slate-500 hover:text-slate-700"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      
+      <!-- Cover & Avatar Area -->
+      <div class="relative w-full h-40 bg-slate-200">
+        <!-- Ảnh bìa mặc định -->
+        <img src="https://images.unsplash.com/photo-1599839619722-39751411ea63?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover">
+        
+        <!-- Avatar -->
+        <div class="absolute -bottom-8 left-4 flex items-end gap-3">
+          <div class="relative">
+            <img id="zalo-profile-avatar" src="/logo.png" class="w-16 h-16 rounded-full border-2 border-white object-cover shadow-sm">
+            <button class="absolute bottom-0 right-0 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-full w-6 h-6 flex items-center justify-center border border-white shadow">
+              <i class="fa-solid fa-camera text-[10px]"></i>
+            </button>
+          </div>
+          <div class="pb-1 flex items-center gap-2">
+            <h3 id="zalo-profile-name" class="font-bold text-slate-800 text-lg">Tên hiển thị</h3>
+            <button class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-pencil text-xs"></i></button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Info List -->
+      <div class="pt-12 px-4 pb-4 space-y-4">
+        <h4 class="font-bold text-slate-800 text-[15px] border-b border-slate-100 pb-2">Thông tin cá nhân</h4>
+        
+        <div class="space-y-3 text-sm">
+          <div class="flex items-start">
+            <span class="w-24 text-slate-500 shrink-0">Bio</span>
+            <a href="#" class="text-blue-500 hover:underline truncate">https://alonha.io.vn/user</a>
+          </div>
+          <div class="flex items-start">
+            <span class="w-24 text-slate-500 shrink-0">Giới tính</span>
+            <span id="zalo-profile-gender" class="text-slate-800">Nam</span>
+          </div>
+          <div class="flex items-start">
+            <span class="w-24 text-slate-500 shrink-0">Ngày sinh</span>
+            <span id="zalo-profile-dob" class="text-slate-800">--/--/----</span>
+          </div>
+          <div class="flex items-start">
+            <span class="w-24 text-slate-500 shrink-0">Điện thoại</span>
+            <span id="zalo-profile-phone" class="text-slate-800">---------</span>
+          </div>
+        </div>
+        
+        <p class="text-xs text-slate-400 leading-relaxed pt-2 border-t border-slate-50">
+          Chỉ bạn bè có lưu số của bạn trong danh bạ máy xem được số này
+        </p>
+      </div>
+      
+      <!-- Footer Button -->
+      <div class="p-4 border-t border-slate-100 bg-white">
+        <button id="btn-open-edit-profile" class="w-full flex items-center justify-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold py-2.5 rounded-lg text-sm transition-colors">
+          <i class="fa-solid fa-pencil"></i> Cập nhật
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CÀI ĐẶT BẢO MẬT (ZALO STYLE) -->
+  <div id="zalo-settings-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-[60]">
+    <div class="w-full max-w-[800px] h-[600px] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative">
+      
+      <!-- Đóng Cài Đặt -->
+      <button id="btn-close-zalo-settings" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 z-10"><i class="fa-solid fa-xmark text-xl"></i></button>
+
+      <!-- Sidebar Trái -->
+      <div class="w-full md:w-64 bg-slate-50 border-r border-slate-200 flex flex-col h-full">
+        <div class="p-4">
+          <h4 class="font-bold text-slate-800 text-lg">Cài đặt</h4>
+        </div>
+        <div class="flex-1 overflow-y-auto no-scrollbar space-y-0.5 px-2 pb-4 text-[13px] font-medium text-slate-600">
+          <button class="w-full flex items-center gap-3 px-3 py-2.5 bg-blue-100/50 text-blue-600 rounded-lg"><i class="fa-solid fa-gear w-4 text-center"></i> Cài đặt chung</button>
+          <button class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 rounded-lg text-left"><i class="fa-solid fa-shield-halved w-4 text-center"></i> Tài khoản và bảo mật</button>
+          <button class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 rounded-lg text-left"><i class="fa-solid fa-lock w-4 text-center"></i> Quyền riêng tư</button>
+          <button class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 rounded-lg text-left"><i class="fa-solid fa-cloud-arrow-up w-4 text-center"></i> Đồng bộ và sao lưu</button>
+          <button class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 rounded-lg text-left"><i class="fa-solid fa-database w-4 text-center"></i> Quản lý dữ liệu</button>
+          <button class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 rounded-lg text-left"><i class="fa-solid fa-paint-roller w-4 text-center"></i> Giao diện</button>
+          <button class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 rounded-lg text-left"><i class="fa-regular fa-bell w-4 text-center"></i> Thông báo</button>
+          <button class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 rounded-lg text-left"><i class="fa-regular fa-comment-dots w-4 text-center"></i> Tin nhắn</button>
+          <button class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 rounded-lg text-left"><i class="fa-solid fa-phone w-4 text-center"></i> Cài đặt cuộc gọi</button>
+          <button class="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-slate-100 rounded-lg text-left"><i class="fa-solid fa-puzzle-piece w-4 text-center"></i> Tiện ích</button>
+        </div>
+      </div>
+
+      <!-- Nội Dung Phải -->
+      <div class="flex-1 bg-white overflow-y-auto no-scrollbar p-6 space-y-8">
+        
+        <!-- Section: Danh bạ -->
+        <div>
+          <h5 class="font-bold text-slate-800 text-sm mb-1">Danh bạ</h5>
+          <p class="text-xs text-slate-500 mb-3">Danh sách bạn bè được hiển thị trong danh bạ</p>
+          <div class="bg-slate-50 rounded-xl p-1">
+            <label class="flex items-center gap-3 p-3 hover:bg-slate-100 rounded-lg cursor-pointer text-sm text-slate-700">
+              <input type="radio" name="contact-view" class="w-4 h-4 text-zalo-primary focus:ring-zalo-primary">
+              Hiển thị tất cả bạn bè
+            </label>
+            <label class="flex items-center gap-3 p-3 hover:bg-slate-100 rounded-lg cursor-pointer text-sm text-slate-700">
+              <input type="radio" name="contact-view" checked class="w-4 h-4 text-zalo-primary focus:ring-zalo-primary">
+              Chỉ hiển thị bạn bè đang sử dụng AloNha
+            </label>
+          </div>
+        </div>
+
+        <!-- Section: Ngôn ngữ -->
+        <div>
+          <h5 class="font-bold text-slate-800 text-sm mb-3">Ngôn ngữ</h5>
+          <div class="flex items-center justify-between p-3 border border-slate-200 rounded-xl">
+            <span class="text-sm text-slate-700">Thay đổi ngôn ngữ</span>
+            <select class="text-sm text-slate-600 bg-transparent focus:outline-none cursor-pointer">
+              <option>Tiếng Việt</option>
+              <option>English</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Section: Khởi động & ghi nhớ -->
+        <div>
+          <h5 class="font-bold text-slate-800 text-sm mb-3">Khởi động & ghi nhớ tài khoản</h5>
+          <div class="bg-slate-50 rounded-xl p-1 space-y-1">
+            <div class="flex items-center justify-between p-3">
+              <span class="text-sm text-slate-700">Khởi động AloNha khi mở máy</span>
+              <label class="switch shrink-0"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+            <div class="flex items-center justify-between p-3">
+              <span class="text-sm text-slate-700">Ghi nhớ tài khoản đăng nhập</span>
+              <label class="switch shrink-0"><input type="checkbox" checked><span class="slider"></span></label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Nút gọi form đổi PIN (Liên kết tới tính năng cũ) -->
+        <div class="pt-4 border-t border-slate-100">
+          <button id="btn-trigger-old-settings" class="text-sm text-blue-600 font-semibold hover:underline">Thiết lập mã PIN bảo mật hệ thống</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TẠO NHÓM CHAT MỚI -->
+  <div id="create-group-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-100">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-users-rectangle text-zalo-primary mr-1"></i> Tạo nhóm chat mới</h4>
+        <button id="btn-close-create-group" class="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tên nhóm chat</label>
+          <input type="text" id="create-group-name" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-zalo-primary" placeholder="Ví dụ: Văn phòng OF TQ, Ban Dự Án...">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Chọn thành viên tham gia nhóm</label>
+          <div id="create-group-members-list" class="space-y-2 max-h-48 overflow-y-auto no-scrollbar border border-slate-100 rounded-xl p-3 bg-slate-50">
+            <!-- Đổ thành viên -->
+          </div>
+        </div>
+        <button id="btn-submit-create-group" class="w-full bg-zalo-primary hover:bg-zalo-hover text-white font-semibold py-3 rounded-xl shadow-lg transition-colors text-sm">Khởi tạo nhóm chat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: KẾT BẠN MỚI (Zalo Friend Finder) -->
+  <div id="add-friend-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-100">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-user-plus text-zalo-primary mr-1"></i> Tìm kiếm & Kết bạn</h4>
+        <button id="btn-close-add-friend" class="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-4 select-none">
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+            <i class="fa-solid fa-search text-xs"></i>
+          </span>
+          <input type="text" id="add-friend-search-input" class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-zalo-primary text-xs" placeholder="Nhập tên tài khoản hoặc tên hiển thị để tìm kiếm...">
+        </div>
+        
+        <div id="add-friend-results-list" class="space-y-2 max-h-60 overflow-y-auto no-scrollbar border border-slate-100 rounded-xl p-3 bg-slate-50">
+          <p class="text-xs text-slate-400 text-center py-4">Nhập thông tin tìm kiếm phía trên để tìm bạn bè.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: THÊM THÀNH VIÊN VÀO NHÓM HIỆN TẠI -->
+  <div id="add-member-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-100">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-user-plus text-zalo-primary mr-1"></i> Thêm thành viên mới</h4>
+        <button id="btn-close-add-member" class="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Chọn thành viên để thêm vào cuộc trò chuyện</label>
+          <div id="add-member-list" class="space-y-2 max-h-48 overflow-y-auto no-scrollbar border border-slate-100 rounded-xl p-3 bg-slate-50">
+            <!-- Đổ TV chưa tham gia -->
+          </div>
+        </div>
+        <button id="btn-submit-add-member" class="w-full bg-zalo-primary hover:bg-zalo-hover text-white font-semibold py-3 rounded-xl shadow-lg transition-colors text-sm">Thêm thành viên</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: XÁC NHẬN THAM GIA QUA LIÊN KẾT CHIA SẺ -->
+  <div id="confirm-join-modal" class="hidden fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50">
+    <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 text-center space-y-4">
+      <img id="confirm-join-avatar" src="/logo.png" class="w-20 h-20 rounded-full border-2 border-slate-100 mx-auto object-cover" alt="Group Image">
+      <div>
+        <h3 id="confirm-join-group-name" class="font-bold text-slate-800 text-base">Tên nhóm</h3>
+        <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-users"></i> Nhóm hiện có <span id="confirm-join-member-count" class="font-bold">0</span> thành viên</p>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">Bạn vừa click vào đường dẫn tham gia nhóm. Hãy xác nhận tham gia để kết nối với các đồng nghiệp ngay lập tức.</p>
+      <div class="flex gap-2.5 pt-2">
+        <button id="btn-close-confirm-join" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl text-xs transition-colors">Bỏ qua</button>
+        <button id="btn-submit-confirm-join" class="flex-1 bg-zalo-primary hover:bg-zalo-hover text-white font-semibold py-2.5 rounded-xl text-xs transition-colors shadow-md">Gia nhập nhóm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: HỒ SƠ CÁ NHÂN (Xem & Sửa Profile) -->
+  <div id="profile-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-100">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-address-card text-zalo-primary mr-1"></i> Chỉnh sửa thông tin cá nhân</h4>
+        <button id="btn-close-profile" class="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      
+      <form id="profile-edit-form" class="space-y-4">
+        <div class="flex flex-col items-center gap-2 select-none">
+          <div class="relative group">
+            <img id="profile-avatar-preview" src="/logo.png" class="w-20 h-20 rounded-full object-cover border border-slate-200 shadow" alt="Profile Preview">
+            <label class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center text-white text-xs opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+              <i class="fa-solid fa-camera text-base"></i>
+              <input type="file" id="input-avatar-file" accept="image/*" class="hidden">
+            </label>
+          </div>
+          <p class="text-[10px] text-slate-400">Click để upload ảnh đại diện mới</p>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Tên hiển thị</label>
+            <input type="text" id="profile-display-name-input" required class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:ring-1 focus:ring-zalo-primary focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Số điện thoại</label>
+            <input type="text" id="profile-phone-input" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:ring-1 focus:ring-zalo-primary focus:outline-none" placeholder="Ví dụ: 0912345678...">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Giới tính</label>
+              <select id="profile-gender-select" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:ring-1 focus:ring-zalo-primary focus:outline-none">
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+                <option value="Khác">Khác</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Ngày sinh</label>
+              <input type="date" id="profile-dob-input" class="w-full border border-slate-200 rounded-xl px-4 py-2 text-xs focus:ring-1 focus:ring-zalo-primary focus:outline-none">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-zalo-primary hover:bg-zalo-hover text-white font-semibold py-2.5 rounded-xl text-xs transition-colors shadow-md mt-4">Cập nhật hồ sơ</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CÀI ĐẶT BẢO MẬT & PIN CODE -->
+  <div id="settings-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 border border-slate-100">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-lock text-amber-500 mr-1"></i> Cài đặt mã khóa bảo mật (PIN)</h4>
+        <button id="btn-close-settings" class="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-full text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      
+      <form id="settings-pin-form" class="space-y-4">
+        <p class="text-xs text-slate-500 leading-relaxed">Để đảm bảo an toàn tuyệt đối khi bạn tạm thời vắng mặt trên VPS, hãy thiết lập mã khóa PIN gồm 6 số. Màn hình sẽ tự động khóa sau thời gian chờ đã chọn.</p>
+        
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Mã PIN 6 số mới (Để trống nếu muốn tắt khóa)</label>
+            <input type="password" id="settings-pin-input" maxlength="6" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm tracking-widest text-center focus:ring-1 focus:ring-zalo-primary focus:outline-none font-mono" placeholder="------">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Thời gian tự động khóa màn hình (Phút)</label>
+            <select id="settings-timeout-select" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:ring-1 focus:ring-zalo-primary focus:outline-none">
+              <option value="1">Khóa sau 1 phút không hoạt động</option>
+              <option value="3">Khóa sau 3 phút không hoạt động</option>
+              <option value="5">Khóa sau 5 phút không hoạt động</option>
+              <option value="10">Khóa sau 10 phút không hoạt động</option>
+              <option value="30">Khóa sau 30 phút không hoạt động</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-zalo-primary hover:bg-zalo-hover text-white font-semibold py-2.5 rounded-xl text-xs transition-colors shadow-md mt-4">Lưu cấu hình</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: THIẾT LẬP TỰ HỦY TIN NHẮN -->
+  <div id="timer-modal-overlay" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+    <div class="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 text-center space-y-4">
+      <div class="w-12 h-12 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto text-xl"><i class="fa-regular fa-clock"></i></div>
+      <div>
+        <h4 class="font-bold text-slate-800 text-sm">Tin nhắn tự động biến mất</h4>
+        <p class="text-xs text-slate-500 mt-1">Chọn thời gian để tin nhắn tự động biến mất vĩnh viễn.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <button onclick="setSelfDestructTimer(10)" class="py-2.5 bg-slate-50 hover:bg-slate-100 font-semibold border border-slate-100 rounded-xl text-slate-700">10 Giây</button>
+        <button onclick="setSelfDestructTimer(60)" class="py-2.5 bg-slate-50 hover:bg-slate-100 font-semibold border border-slate-100 rounded-xl text-slate-700">1 Phút</button>
+        <button onclick="setSelfDestructTimer(3600)" class="py-2.5 bg-slate-50 hover:bg-slate-100 font-semibold border border-slate-100 rounded-xl text-slate-700">1 Giờ</button>
+        <button onclick="setSelfDestructTimer(86400)" class="py-2.5 bg-slate-50 hover:bg-slate-100 font-semibold border border-slate-100 rounded-xl text-slate-700">1 Ngày</button>
+        <button onclick="setSelfDestructTimer(604800)" class="py-2.5 bg-slate-50 hover:bg-slate-100 font-semibold border border-slate-100 rounded-xl text-slate-700">7 Ngày</button>
+        <button onclick="setSelfDestructTimer(0)" class="py-2.5 bg-red-50 hover:bg-red-100 font-bold border border-red-100 rounded-xl text-red-600 col-span-2">Tắt tự hủy</button>
+      </div>
+      <button id="btn-close-timer" class="text-xs text-slate-400 hover:text-slate-600 font-semibold underline pt-2 block mx-auto">Đóng</button>
+    </div>
+  </div>
+
+  <!-- MODAL: GIAO DIỆN CUỘC GỌI HD WebRTC P2P -->
+  <div id="call-modal" class="hidden fixed inset-0 bg-slate-950 flex flex-col items-center justify-center p-6 z-50 select-none">
+    <div class="relative w-full max-w-4xl h-3/4 bg-slate-900 rounded-2xl overflow-hidden shadow-2xl flex items-center justify-center">
+      <video id="remote-video" autoplay playsinline class="w-full h-full object-cover"></video>
+      <video id="local-video" autoplay playsinline muted class="absolute top-4 right-4 w-28 h-36 md:w-32 md:h-44 object-cover rounded-xl border border-white/20 shadow-lg z-10 bg-slate-950"></video>
+
+      <div id="call-audio-only-ui" class="hidden flex flex-col items-center space-y-4">
+        <div class="w-24 h-24 rounded-full bg-zalo-primary text-white flex items-center justify-center text-3xl shadow-xl animate-bounce">
+          <i class="fa-solid fa-microphone"></i>
+        </div>
+        <p class="text-white font-bold text-lg animate-pulse" id="call-target-name">Phạm Tuấn Hiệp</p>
+        <p class="text-slate-400 text-xs">Đang truyền giọng nói bảo mật...</p>
+      </div>
+
+      <div id="call-status-overlay" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center space-y-4 text-center">
+        <img id="call-status-avatar" src="/logo.png" class="w-24 h-24 rounded-full border-4 border-white/10 animate-pulse object-cover mx-auto" alt="Call Avatar">
+        <h3 id="call-status-name" class="text-white font-bold text-base">Đồng nghiệp</h3>
+        <p id="call-status-text" class="text-zalo-primary text-xs font-semibold">Đang liên kết đường truyền...</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-6 mt-6 shrink-0">
+      <button id="btn-call-toggle-mic" class="w-14 h-14 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center shadow-lg transition-all"><i class="fa-solid fa-microphone text-lg"></i></button>
+      <button id="btn-call-toggle-cam" class="w-14 h-14 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center shadow-lg transition-all"><i class="fa-solid fa-video text-lg"></i></button>
+      <button id="btn-call-screen-share" class="w-14 h-14 rounded-full bg-slate-800 hover:bg-emerald-600 text-white flex items-center justify-center shadow-lg transition-all" title="Chia sẻ màn hình"><i class="fa-solid fa-display text-lg"></i></button>
+      <button id="btn-call-hangup" class="w-16 h-16 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-xl transition-all hover:scale-105"><i class="fa-solid fa-phone-slash text-xl"></i></button>
+    </div>
+  </div>
+
+  <!-- MODAL: NHẬN CUỘC GỌI ĐẾN (Incoming Ringtone) -->
+  <div id="incoming-call-overlay" class="hidden fixed inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-6 z-50 select-none">
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-6 shadow-2xl">
+      <div class="relative inline-block mx-auto">
+        <img id="incoming-caller-avatar" src="/logo.png" class="w-24 h-24 rounded-full border-4 border-zalo-primary object-cover mx-auto" alt="Caller Avatar">
+        <span class="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-slate-900 animate-ping"></span>
+      </div>
+      <div>
+        <h3 id="incoming-caller-name" class="text-white font-bold text-lg">Đồng nghiệp gọi đến</h3>
+        <p id="incoming-call-type" class="text-zalo-primary text-xs font-semibold mt-1"><i class="fa-solid fa-video mr-1"></i> Cuộc gọi video bảo mật</p>
+      </div>
+      <div class="flex items-center justify-center gap-6 pt-2">
+        <button id="btn-incoming-reject" class="w-14 h-14 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-lg transition-all hover:scale-105"><i class="fa-solid fa-phone-slash text-lg"></i></button>
+        <button id="btn-incoming-accept" class="w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-lg transition-all hover:scale-105"><i class="fa-solid fa-phone text-lg animate-bounce"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MENU TÁC VỤ TIN NHẮN (Context Action Sheet) -->
+  <div id="msg-context-menu" class="hidden fixed inset-0 bg-slate-900/30 flex items-end md:items-center justify-center p-0 md:p-4 z-50 select-none">
+    <div class="w-full md:max-w-xs bg-white rounded-t-2xl md:rounded-2xl shadow-2xl p-4 border border-slate-100 flex flex-col space-y-3 pb-8 md:pb-4 transition-all">
+      <div class="h-1.5 w-12 bg-slate-200 rounded-full mx-auto md:hidden"></div>
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-wider text-center md:text-left border-b border-slate-50 pb-2">Tác vụ tin nhắn</p>
+      <button id="ctx-btn-pin" class="w-full text-left px-3 py-2.5 text-xs hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 font-semibold"><i class="fa-solid fa-thumbtack text-amber-500 transform rotate-45"></i> Ghim tin nhắn này</button>
+      <button id="ctx-btn-forward" class="w-full text-left px-3 py-2.5 text-xs hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 font-semibold"><i class="fa-solid fa-share text-emerald-500"></i> Chuyển tiếp tin nhắn</button>
+      <button id="ctx-btn-copy" class="w-full text-left px-3 py-2.5 text-xs hover:bg-slate-50 flex items-center gap-2.5 text-slate-700 font-semibold"><i class="fa-solid fa-copy text-blue-500"></i> Sao chép tin nhắn</button>
+      <button id="ctx-btn-delete" class="w-full text-left px-3 py-2.5 text-xs hover:bg-slate-50 flex items-center gap-2.5 text-red-600 font-semibold"><i class="fa-solid fa-trash"></i> Thu hồi (Xóa tin)</button>
+      <button id="ctx-btn-cancel" class="w-full text-center py-2.5 text-xs hover:bg-slate-100 rounded-xl text-slate-500 font-bold md:hidden bg-slate-50">Hủy tác vụ</button>
+    </div>
+  </div>
+
+<!-- MODAL: MENU CHUỘT PHẢI HỘI THOẠI (Zalo Style Context Menu) -->
+  <div id="room-context-menu" class="hidden fixed bg-white rounded-xl shadow-2xl border border-slate-100 flex flex-col py-1.5 z-[70] w-48 text-slate-700 select-none transition-opacity">
+    <button id="ctx-room-pin" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 flex items-center gap-2.5 font-semibold text-slate-700">
+      <i class="fa-solid fa-thumbtack w-4 text-center"></i> <span>Ghim hội thoại</span>
+    </button>
+    <button id="ctx-room-mute" class="w-full text-left px-4 py-2 text-xs hover:bg-slate-50 flex items-center gap-2.5 font-semibold text-slate-700">
+      <i class="fa-solid fa-bell-slash w-4 text-center"></i> <span>Tắt thông báo</span>
+    </button>
+  </div>
+
+  <!-- MODAL: MÀN HÌNH KHÓA PIN CODE BẢO MẬT TOÀN DIỆN -->
+  <div id="pin-lock-overlay" class="hidden fixed inset-0 bg-slate-900/95 flex flex-col items-center justify-center z-50 p-4 select-none">
+    <div class="w-full max-w-sm flex flex-col items-center space-y-6">
+      <div class="w-16 h-16 rounded-2xl bg-zalo-primary text-white flex items-center justify-center text-3xl shadow-lg"><i class="fa-solid fa-shield-halved"></i></div>
+      <div class="text-center space-y-1">
+        <h3 class="text-white font-bold text-base">Hệ Thống Đang Tạm Khóa</h3>
+        <p class="text-slate-400 text-xs">Vui lòng nhập mã PIN 6 số để tiếp tục truy cập.</p>
+      </div>
+      
+      <!-- Dots -->
+      <div class="flex gap-3 justify-center py-3">
+        <span class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-slate-500 transition-colors"></span>
+        <span class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-slate-500 transition-colors"></span>
+        <span class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-slate-500 transition-colors"></span>
+        <span class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-slate-500 transition-colors"></span>
+        <span class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-slate-500 transition-colors"></span>
+        <span class="pin-dot w-3.5 h-3.5 rounded-full border-2 border-slate-500 transition-colors"></span>
+      </div>
+
+      <!-- Keyboard Grid -->
+      <div class="grid grid-cols-3 gap-4 w-full max-w-[280px] text-white pt-2 font-mono">
+        <button onclick="pressPinKey(1)" class="w-14 h-14 rounded-full border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition-transform">1</button>
+        <button onclick="pressPinKey(2)" class="w-14 h-14 rounded-full border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition-transform">2</button>
+        <button onclick="pressPinKey(3)" class="w-14 h-14 rounded-full border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition-transform">3</button>
+        <button onclick="pressPinKey(4)" class="w-14 h-14 rounded-full border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition-transform">4</button>
+        <button onclick="pressPinKey(5)" class="w-14 h-14 rounded-full border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition-transform">5</button>
+        <button onclick="pressPinKey(6)" class="w-14 h-14 rounded-full border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition-transform">6</button>
+        <button onclick="pressPinKey(7)" class="w-14 h-14 rounded-full border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition-transform">7</button>
+        <button onclick="pressPinKey(8)" class="w-14 h-14 rounded-full border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition-transform">8</button>
+        <button onclick="pressPinKey(9)" class="w-14 h-14 rounded-full border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition-transform">9</button>
+        <button onclick="clearPin()" class="w-14 h-14 rounded-full text-xs text-red-400 hover:text-red-300 active:scale-95 font-bold flex items-center justify-center">Xóa</button>
+        <button onclick="pressPinKey(0)" class="w-14 h-14 rounded-full border border-slate-700/80 bg-slate-800/40 hover:bg-slate-800 text-lg font-bold flex items-center justify-center active:scale-95 transition-transform">0</button>
+        <button onclick="cancelPinInput()" class="w-14 h-14 rounded-full text-xs text-slate-400 hover:text-slate-300 active:scale-95 font-bold flex items-center justify-center">Hủy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: HIỂN THỊ TIẾN TRÌNH UPLOAD FILE LỚN 1GB -->
+  <div id="upload-progress-banner" class="hidden fixed bottom-6 right-6 z-50 w-80 bg-white border border-slate-200 shadow-2xl rounded-2xl p-4 space-y-3">
+    <div class="flex justify-between items-center text-xs">
+      <span class="font-bold text-slate-800 truncate max-w-[200px]" id="upload-filename-text">Tên file đính kèm...</span>
+      <span class="font-mono text-zalo-primary font-bold" id="upload-percentage-text">0%</span>
+    </div>
+    <div class="w-full bg-slate-100 rounded-full h-2">
+      <div id="upload-progress-bar-fill" class="bg-zalo-primary h-2 rounded-full transition-all" style="width: 0%"></div>
+    </div>
+    <p class="text-[10px] text-slate-400 font-semibold italic flex items-center gap-1"><i class="fa-solid fa-spinner animate-spin"></i> Đang tải và đồng bộ hóa an sau lên Google Drive...</p>
+  </div>
+  <!-- ========================================== -->
+  <!-- 🔄 MODAL: CHUYỂN TIẾP TIN NHẮN (FORWARD) -->
+  <!-- ========================================== -->
+  <div id="forward-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-100">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
+        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-share text-emerald-500"></i> Chuyển tiếp tin nhắn
+        </h4>
+        <button id="btn-close-forward" class="w-8 h-8 flex items-center justify-center hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-4 space-y-3">
+        <!-- Preview message to forward -->
+        <div id="forward-msg-preview" class="bg-slate-50 border border-slate-100 rounded-xl p-3 max-h-24 overflow-y-auto">
+          <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Nội dung chuyển tiếp:</p>
+          <p id="forward-msg-content" class="text-sm text-slate-700 line-clamp-3 break-words">...</p>
+        </div>
+
+        <!-- Search / Filter conversations -->
+        <div class="relative">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+            <i class="fa-solid fa-search text-xs"></i>
+          </span>
+          <input type="text" id="forward-search-input" class="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-100 focus:outline-none focus:ring-1 focus:ring-zalo-primary text-xs" placeholder="Tìm kiếm hội thoại...">
+        </div>
+
+        <!-- List of conversations / users to forward to -->
+        <div id="forward-targets-list" class="space-y-1 max-h-60 overflow-y-auto no-scrollbar border border-slate-100 rounded-xl p-2 bg-white">
+          <p class="text-xs text-slate-400 text-center py-8">Đang tải danh sách hội thoại...</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-2 pt-2">
+          <button id="btn-cancel-forward" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold py-2.5 rounded-xl text-xs transition-colors">Hủy</button>
+          <button id="btn-confirm-forward" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5" disabled>
+            <i class="fa-solid fa-share text-sm"></i> Chuyển tiếp
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 📍 LOCATION SHARING MODALS -->
+  <!-- ========================================== -->
+
+  <!-- MODAL: CHỌN VỊ TRÍ (LOCATION PICKER) -->
+  <div id="location-picker-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-100">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
+        <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+          <i class="fa-solid fa-location-dot text-emerald-500"></i> Chia sẻ vị trí
+        </h4>
+        <button id="btn-close-location-picker" class="w-8 h-8 flex items-center justify-center hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="p-4 space-y-3">
+        <!-- Loading -->
+        <div id="location-loading" class="flex items-center justify-center gap-2 text-slate-500 text-xs py-4">
+          <i class="fa-solid fa-spinner animate-spin"></i>
+          <span>Đang lấy vị trí của bạn...</span>
+        </div>
+
+        <!-- Error -->
+        <div id="location-error" class="hidden bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl px-3 py-2 flex items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>Không thể lấy vị trí của bạn.</span>
+        </div>
+
+        <!-- Mini Map Container -->
+        <div id="location-mini-map" class="hidden">
+          <div id="location-picker-map" class="h-64 rounded-xl border border-slate-200"></div>
+        </div>
+
+        <!-- Selected Location Info -->
+        <div id="location-selected-info" class="hidden bg-slate-50 border border-slate-100 rounded-xl p-3 space-y-1">
+          <p id="loc-selected-name" class="text-sm font-bold text-slate-800 truncate">Địa điểm</p>
+          <p id="loc-selected-address" class="text-xs text-slate-500 truncate">Địa chỉ</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-2">
+          <button id="btn-loc-send-current" class="flex-1 bg-zalo-primary hover:bg-zalo-hover text-white font-semibold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-location-arrow text-sm"></i> Gửi vị trí hiện tại
+          </button>
+          <button id="btn-loc-confirm-pick" class="hidden flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl text-xs transition-colors flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-check text-sm"></i> Gửi vị trí đã chọn
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: XEM VỊ TRÍ (LOCATION VIEWER) -->
+  <div id="location-view-modal" class="hidden fixed inset-0 bg-slate-900/40 flex items-center justify-center p-4 z-50">
+    <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col border border-slate-100">
+      <!-- Header -->
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50">
+        <h4 id="loc-view-title" class="font-bold text-slate-800 text-sm flex items-center gap-1.5 truncate">
+          <i class="fa-solid fa-location-dot text-emerald-500 shrink-0"></i>
+          <span class="truncate">Vị trí</span>
+        </h4>
+        <button id="btn-close-location-view" class="w-8 h-8 flex items-center justify-center hover:bg-slate-200 rounded-full text-slate-500 transition-colors">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="flex flex-col">
+        <!-- Map -->
+        <div id="location-view-map" class="h-64 w-full"></div>
+
+        <!-- Info -->
+        <div class="p-4 space-y-2">
+          <p id="loc-view-name" class="text-sm font-bold text-slate-800 truncate">Tên địa điểm</p>
+          <p id="loc-view-address" class="text-xs text-slate-500 truncate">Địa chỉ</p>
+          <a id="loc-view-open-link" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline font-semibold">
+            <i class="fa-solid fa-map-pin"></i> Mở trong Google Maps
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Socket.io & Logic Client -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+{
+  "name": "alonha",
+  "version": "1.3.0",
+  "description": "AloNha - Ứng dụng nhắn tin bảo mật, đa nền tảng",
+  "main": "server-fixed.js",
+  "scripts": {
+    "start": "node server-fixed.js",
+    "electron": "electron electron-app/main.js",
+    "electron-build": "electron-builder --win --x64",
+    "capacitor-sync": "npx cap sync",
+    "android-build": "npx cap copy && cd android && ./gradlew assembleDebug",
+    "ios-build": "npx cap copy && cd ios && xcodebuild -workspace App.xcworkspace -scheme App -configuration Release",
+    "build-win": "npm run electron-build",
+    "build-android": "npm run android-build",
+    "setup": "npm install",
+    "build-all": "npm run build-win && npm run build-android"
+  },
+  "keywords": [
+    "chat",
+    "messaging",
+    "real-time",
+    "socket.io"
+  ],
+  "license": "MIT",
+  "build": {
+    "appId": "com.alonha.app",
+    "productName": "AloNha",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "server-fixed.js",
+      "server-api-loader.js",
+      "server.js",
+      "app.js",
+      "index.html",
+      "electron-app/**/*",
+      "data/**/*",
+      "!node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "data/",
+        "to": "data/",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": null,
+      "uninstallerIcon": null
+    },
+    "extraMetadata": {
+      "main": "electron-app/main.js"
+    }
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.11.1",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0",
+    "socket.io": "^4.8.3",
+    "sql.js": "^1.14.1"
+  },
+  "devDependencies": {
+    "electron": "^43.1.1",
+    "electron-rebuild": "^3.2.9"
+  }
+}

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AloNha - Mobile</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0068ff 0%, #0044cc 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .logo h1 {
+      font-size: 36px;
+      font-weight: 900;
+    }
+    .logo h1 span:first-child { color: #005da4; }
+    .logo h1 span:last-child { color: #f58220; }
+    .logo p {
+      color: #666;
+      margin-top: 5px;
+      font-size: 14px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+    }
+    input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+      outline: none;
+    }
+    input:focus {
+      border-color: #0068ff;
+    }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: #0068ff;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+    .btn:hover { background: #0052cc; }
+    .btn:active { transform: scale(0.98); }
+    .info {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 13px;
+      color: #888;
+    }
+    .info a {
+      color: #0068ff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .status {
+      text-align: center;
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 10px;
+      display: none;
+      font-size: 14px;
+    }
+    .status.success { background: #e8f5e9; color: #2e7d32; display: block; }
+    .status.error { background: #ffebee; color: #c62828; display: block; }
+    .status.loading { background: #fff3e0; color: #e65100; display: block; }
+    .saved-ip {
+      margin-top: 15px;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 10px;
+      font-size: 13px;
+      text-align: center;
+      display: none;
+    }
+    .clear-btn {
+      background: none;
+      border: none;
+      color: #c62828;
+      cursor: pointer;
+      font-size: 13px;
+      margin-top: 5px;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <h1><span>Alo</span><span>Nha</span></h1>
+      <p>?ng d?ng nh?n tin b?o m?t</p>
+    </div>
+
+    <div class="form-group">
+      <label for="serverIp">??a ch? IP máy tính (Server)</label>
+      <input type="text" id="serverIp" placeholder="Ví d?: 192.168.1.100" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label for="serverPort">C?ng</label>
+      <input type="number" id="serverPort" value="3000" placeholder="3000">
+    </div>
+
+    <button class="btn" onclick="connect()">K?t n?i</button>
+
+    <div id="status" class="status"></div>
+    <div id="savedIp" class="saved-ip"></div>
+
+    <div class="info">
+      <p>?i?n ?úng ??a ch? IP c?a máy tính ?ang ch?y AloNha Server</p>
+      <p style="margin-top:10px;font-size:12px;color:#aaa;">?? xem IP: m? cmd gõ <b>ipconfig</b></p>
+    </div>
+  </div>
+
+  <script>
+    // Ki?m tra IP ?ã l?u
+    const savedServer = localStorage.getItem('alonha_server');
+    if (savedServer) {
+      const parts = savedServer.split(':');
+      document.getElementById('savedIp').innerHTML = 
+        '?ã k?t n?i tr??c ?ó: <b>' + savedServer + '</b><br>' +
+        '<button class="clear-btn" onclick="clearSaved()">Xóa và nh?p l?i</button>';
+      document.getElementById('savedIp').style.display = 'block';
+    }
+
+    function connect() {
+      const ip = document.getElementById('serverIp').value.trim();
+      const port = document.getElementById('serverPort').value.trim() || '3000';
+      const statusEl = document.getElementById('status');
+
+      if (!ip) {
+        statusEl.className = 'status error';
+        statusEl.textContent = 'Vui lòng nh?p ??a ch? IP';
+        return;
+      }
+
+      statusEl.className = 'status loading';
+      statusEl.textContent = '?ang k?t n?i t?i ' + ip + ':' + port + '...';
+
+      const serverUrl = 'http://' + ip + ':' + port;
+
+      // Ki?m tra k?t n?i
+      fetch(serverUrl + '/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: 'SuperAdmin', password: '123456' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token || data.user) {
+          // L?u IP
+          localStorage.setItem('alonha_server', ip + ':' + port);
+          
+          statusEl.className = 'status success';
+          statusEl.textContent = 'K?t n?i thành công! ?ang chuy?n h??ng...';
+          
+          // Chuy?n ??n app chat
+          setTimeout(() => {
+            window.location.href = serverUrl;
+          }, 1500);
+        } else {
+          statusEl.className = 'status success';
+          statusEl.textContent = 'Server ho?t ??ng! ?ang chuy?n h??ng...';
+          setTimeout(() => {
+            window.location.href = serverUrl;
+          }, 1500);
+        }
+      })
+      .catch(err => {
+        statusEl.className = 'status error';
+        statusEl.textContent = 'Không th? k?t n?i! Ki?m tra IP và ?m b?o server ?ang ch?y.';
+        console.error(err);
+      });
+    }
+
+    function clearSaved() {
+      localStorage.removeItem('alonha_server');
+      document.getElementById('savedIp').style.display = 'none';
+      document.getElementById('serverIp').value = '';
+    }
+  </script>
+</body>
+</html>

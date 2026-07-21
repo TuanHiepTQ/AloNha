@@ -1,0 +1,27 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Build output
+dist-electron/
+mobile-app/android/app/build/
+mobile-app/ios/build/
+*.apk
+*.aab
+*.ipa
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Capacitor
+mobile-app/android/.gradle/
+mobile-app/ios/Pods/
+
+# IDE
+.idea/
+*.sublime-*
